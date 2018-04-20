@@ -1,13 +1,20 @@
 #include "tablestring.h"
-#include "utils.h"
+#include "ioutils.h"
 
 using namespace NAMESPACE_BINTABLE;
+
+
+void BinTableString::read_to_buffer(std::istream& stream, char* buffer) {
+    uint32_t size = 0;
+    read_primitive_from_stream(stream, size);
+    read_from_stream_buffered(stream, buffer, size);
+}
 
 
 BinTableString::BinTableString(std::istream& stream) {
     read_primitive_from_stream(stream, size);
     data = new char[size];
-    stream.read(data, size);
+    read_from_stream_buffered(stream, data, size);
     deleteData = true;
 };
 

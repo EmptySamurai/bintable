@@ -15,6 +15,7 @@ class BinTableString {
         BinTableString();
         BinTableString(std::istream& stream);
         void write(std::ostream& stream);   
+        static void read_to_buffer(std::istream& stream, char* buffer);
         BinTableString* copy();  
         ~BinTableString();
 

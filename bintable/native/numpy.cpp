@@ -52,6 +52,21 @@ void NAMESPACE_BINTABLE::column_data_from_numpy_array(PyArrayObject *arr, BinTab
     }    
 }
 
-PyArrayObject* NAMESPACE_BINTABLE::numpy_array_to_column_data(BinTableColumnData& columnData) {
-    throw "NON IMPLEMENTED";
+PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& columnData) {
+    npy_intp* dims = new npy_intp[1];
+    dims[0] = columnData.size;
+    
+    PyArray_Descr* descr = PyArray_DescrNewFromType(table_to_numpy_types[columnData.type]);
+
+    if (is_basic_bintable_datatype(columnData.type)) {
+        descr->byteorder = '<';        
+    } else if (columnData.type==BINTABLE_UTF32) {
+        descr->elsize = columnData.maxlen;        
+    }
+
+    PyObject* result =  PyArray_NewFromDescr( &PyArray_Type, descr, 1, dims, NULL, columnData.data, NPY_OUT_ARRAY, NULL);
+
+    delete dims;
+
+    return result;
 }

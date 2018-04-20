@@ -16,4 +16,10 @@ BinTableString* python_string_to_table_string(PyObject* obj) {
     return result;
 }
 
+PyObject* table_string_to_python_string(BinTableString* str) {
+    const char *errors = NULL;
+    return PyUnicode_DecodeUTF8(str->data, str->size, errors);
+}
+
+
 NAMESPACE_END(NAMESPACE_BINTABLE)
