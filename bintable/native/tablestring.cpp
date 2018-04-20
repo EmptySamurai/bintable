@@ -17,7 +17,7 @@ BinTableString::BinTableString() {
 
 void BinTableString::write(std::ostream& stream) {
     write_primitive_to_stream(stream, size);
-    stream.write(data, size);
+    write_to_stream_buffered(stream, data, size);
 };
 
 BinTableString* BinTableString::copy() {
