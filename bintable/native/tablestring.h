@@ -1,6 +1,10 @@
 #pragma once
 #include <cstdint>
 #include <istream>
+#include "common.h"
+
+NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
+
 
 class BinTableString { 
     public:
@@ -18,3 +22,5 @@ class BinTableString {
     private:
         bool deleteData;
 };
+
+NAMESPACE_END(NAMESPACE_BINTABLE)

@@ -1,5 +1,8 @@
-#include "bintablestring.h"
+#include "tablestring.h"
 #include "utils.h"
+
+using namespace NAMESPACE_BINTABLE;
+
 
 BinTableString::BinTableString(std::istream& stream) {
     read_from_stream(stream, size);

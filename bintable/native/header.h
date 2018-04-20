@@ -2,8 +2,11 @@
 #include <cstdint>
 #include <istream>
 #include <vector>
-#include "bintablestring.h"
-#include "bintabletypes.h"
+#include "common.h"
+#include "tablestring.h"
+#include "types.h"
+
+NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
 const uint64_t CURRENT_VERSION = 1;
 
@@ -27,10 +30,8 @@ public:
     uint32_t maxlen;
 
     BinTableStringColumnDefinition();
-
     explicit BinTableStringColumnDefinition(std::istream& stream);
     void write(std::ostream& stream) override;
-    ~BinTableStringColumnDefinition();
 
 };
 
@@ -48,3 +49,4 @@ class BinTableHeader {
         ~BinTableHeader();
  };
 
+NAMESPACE_END(NAMESPACE_BINTABLE)

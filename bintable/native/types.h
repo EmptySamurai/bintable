@@ -1,5 +1,9 @@
 #pragma once
 #include <cstdint>
+#include "common.h"
+
+
+NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
 typedef uint8_t tabledatatype;
 
@@ -27,8 +31,7 @@ const tabledatatype BINTABLE_UTF32 = 12;
 
 const uint8_t BASIC_DATATYPES_SIZE[11] = {1,1,1,2,2,4,4,8,8,4,8};
 
-bool is_basic_bintable_datatype(tabledatatype type) {
-    return type<=10;
-}
+bool is_basic_bintable_datatype(tabledatatype type);
 
+NAMESPACE_END(NAMESPACE_BINTABLE)
 

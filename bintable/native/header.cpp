@@ -1,7 +1,9 @@
-#include "bintableheader.h"
+#include "header.h"
 #include "utils.h"
+#include <iostream>
+#include <fstream>
 
-
+using namespace NAMESPACE_BINTABLE;
 
 BinTableColumnDefinition::BinTableColumnDefinition(std::istream& stream) {
     read_from_stream(stream, type);
@@ -31,9 +33,6 @@ void BinTableStringColumnDefinition::write(std::ostream& stream) {
     write_to_stream(stream, maxlen);
 };
 
-BinTableStringColumnDefinition::~BinTableStringColumnDefinition() {
-     BinTableColumnDefinition::~BinTableColumnDefinition();
-}
 
 
 BinTableHeader::BinTableHeader(std::istream& stream) {

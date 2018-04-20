@@ -1,2 +1,4 @@
 .idea/
 cmake-build-debug/
+.vscode/
+bintable.egg-info/

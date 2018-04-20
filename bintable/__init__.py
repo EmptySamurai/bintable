@@ -1,0 +1,1 @@
+from .bintable import write_table

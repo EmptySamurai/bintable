@@ -1,17 +1,9 @@
-#pragma once
-
-#include <vector>
-#include <string>
-#include <iostream>
+#include "bintable.h"
+#include <ostream>
 #include <fstream>
-#include "bintableheader.h"
+#include <functional>
 
-struct BinTableColumnData {
-    uint64_t size;
-    tabledatatype type;
-    char *data;
-    BinTableString *name;
-};
+using namespace NAMESPACE_BINTABLE;
 
 BinTableHeader *_create_header(std::vector<BinTableColumnData *> &data) {
     auto *header = new BinTableHeader();
@@ -49,8 +41,10 @@ void _write_row_utf32_value(std::ostream &stream, char* data, uint64_t& index, u
     char* data_end = data_start+maxlen*symbol_size;
     uint32_t len = maxlen;
     for (uint32_t i=0; i<maxlen; i++) {
-        if (((*(data_end-1))==0) && ((*(data_end-2))==0) && ((*(data_end-3))==0) && ((*(data_end-4))==0)) {
-            len -= 1;
+        if (data_end[-1] || data_end[-2] || data_end[-3] || data_end[-4]) {
+            break;
+        } else {
+            len--;
             data_end -= symbol_size;
         }
     }
@@ -62,21 +56,23 @@ void _write_row_utf32_value(std::ostream &stream, char* data, uint64_t& index, u
 typedef void (*writerfunc)(uint64_t&);
 
 
-void _write_rows(BinTableHeader &newDataHeader, std::vector<BinTableColumnData *> &data, std::ostream &stream) {
-    auto n_columns = newDataHeader.n_columns;
-    auto n_rows = newDataHeader.n_rows;
-    std::vector<writerfunc> funcs;
+void _write_rows(std::vector<BinTableColumnData *> &data, std::ostream &stream) {
+    auto n_columns = data.size();
+    auto n_rows = 0;
+    if (n_columns>0) {
+        n_rows=data[0]->size;
+    };
+    std::vector<std::function<void(uint64_t&)>> funcs;
     for (uint64_t i = 0; i < n_columns; i++) {
-        auto columnInfo = (*newDataHeader.columns)[i];
+        auto column = data[i];
         auto dataArray = data[i]->data;
-        if (is_basic_bintable_datatype(columnInfo->type)) {
-            auto size = BASIC_DATATYPES_SIZE[columnInfo->type];
+        if (is_basic_bintable_datatype(column->type)) {
+            auto size = BASIC_DATATYPES_SIZE[column->type];
             funcs.push_back([&stream,  dataArray, size](uint64_t& index) {
                 _write_row_basic_value(stream, dataArray, index, size);
             });
-        } else if (columnInfo->type == BINTABLE_UTF32){
-            auto stringColumnInfo = static_cast <BinTableStringColumnDefinition*>(columnInfo);
-            auto maxlen = stringColumnInfo->maxlen;
+        } else if (column->type == BINTABLE_UTF32){
+            auto maxlen = column->maxlen;
             funcs.push_back([&stream, dataArray, maxlen](uint64_t& index) {
                 _write_row_utf32_value(stream, dataArray, index, maxlen);
             });
@@ -90,7 +86,7 @@ void _write_rows(BinTableHeader &newDataHeader, std::vector<BinTableColumnData *
     }
 }
 
-void write_table(std::vector<BinTableColumnData *> &data, std::string &path, std::string &mode) {
+void NAMESPACE_BINTABLE::write_table(std::vector<BinTableColumnData *> &data, const std::string &path, bool append) {
     BinTableHeader *header;
     std::ofstream outFile;
 
@@ -98,12 +94,7 @@ void write_table(std::vector<BinTableColumnData *> &data, std::string &path, std
     header = _create_header(data);
     header->write(outFile);
 
-    _write_rows((*header), data, outFile);
+    _write_rows(data, outFile);
 
     delete header;
 }
-
-
-
-
-
