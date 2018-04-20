@@ -8,12 +8,14 @@ NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
 class BinTableString { 
     public:
+        //In bytes
         uint32_t size;
         char* data;
 
         BinTableString();
         BinTableString(std::istream& stream);
-        void write(std::ostream& stream);     
+        void write(std::ostream& stream);   
+        BinTableString* copy();  
         ~BinTableString();
 
         bool operator==(const BinTableString& other);

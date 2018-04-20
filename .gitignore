@@ -2,3 +2,4 @@
 cmake-build-debug/
 .vscode/
 bintable.egg-info/
+**.bt

@@ -7,10 +7,11 @@
 #include "types.h"
 #include "common.h"
 
-
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
-struct BinTableColumnData {
+struct BinTableColumnData
+{
+    //In symbols
     uint64_t size;
     tabledatatype type;
     char *data;
@@ -20,9 +21,6 @@ struct BinTableColumnData {
 
 void write_table(std::vector<BinTableColumnData *> &data, const std::string &path, bool append);
 
+void read_table(const std::string &path, std::vector<BinTableColumnData *> &out);
+
 NAMESPACE_END(NAMESPACE_BINTABLE)
-
-
-
-
-

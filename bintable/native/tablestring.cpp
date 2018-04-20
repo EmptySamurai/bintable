@@ -5,7 +5,7 @@ using namespace NAMESPACE_BINTABLE;
 
 
 BinTableString::BinTableString(std::istream& stream) {
-    read_from_stream(stream, size);
+    read_primitive_from_stream(stream, size);
     data = new char[size];
     stream.read(data, size);
     deleteData = true;
@@ -16,8 +16,19 @@ BinTableString::BinTableString() {
 };
 
 void BinTableString::write(std::ostream& stream) {
-    write_to_stream(stream, size);
+    write_primitive_to_stream(stream, size);
     stream.write(data, size);
+};
+
+BinTableString* BinTableString::copy() {
+    auto result = new BinTableString();
+    char* newData = new char[size];
+    std::copy(data, data+size, newData);
+
+    result->size = size;
+    result->data = newData;
+    result->deleteData = true;
+    return result;
 };
 
 BinTableString::~BinTableString() {

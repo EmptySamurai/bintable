@@ -1,0 +1,10 @@
+#include "common.h"
+#include "utils.h"
+
+NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
+
+const int _BUFFER_MAX_SIZE = 100000;
+char _BUFFER [_BUFFER_MAX_SIZE];
+std::streamsize _BUFFER_SIZE=0;
+
+NAMESPACE_END(NAMESPACE_BINTABLE)

@@ -12,13 +12,14 @@ namespace py = pybind11;
 
 using namespace NAMESPACE_BINTABLE;
 
-void write_table_interface(py::dict columnsDict, const std::string &path, bool append) {
+void write_table_interface(const py::dict columnsDict, const std::string &path, bool append) {
     std::vector<BinTableColumnData* > columns;
-    //columns.reserve(columnsDict.size);
+    columns.reserve(columnsDict.size());
     for (auto name_data : columnsDict) {
         BinTableColumnData * column = new BinTableColumnData();
         column->name = python_string_to_table_string(name_data.first.ptr());
         column_data_from_numpy_array((PyArrayObject*)name_data.second.ptr(), *column);
+        columns.push_back(column);
     }
     write_table(columns, path, append);
 
