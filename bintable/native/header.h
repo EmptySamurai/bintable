@@ -14,6 +14,8 @@ class BinTableColumnDefinition {
     public:
         tabledatatype type;
         BinTableString* name; 
+        //In bytes. Optional 
+        uint32_t maxlen;
         
         BinTableColumnDefinition();
 
@@ -22,17 +24,10 @@ class BinTableColumnDefinition {
     virtual void write(std::ostream& stream);
 
     virtual ~BinTableColumnDefinition();
+
+    private:
+        bool has_maxlen();
     
-};
-
-class BinTableStringColumnDefinition : BinTableColumnDefinition {
-public:
-    uint32_t maxlen;
-
-    BinTableStringColumnDefinition();
-    explicit BinTableStringColumnDefinition(std::istream& stream);
-    void write(std::ostream& stream) override;
-
 };
 
 class BinTableHeader {

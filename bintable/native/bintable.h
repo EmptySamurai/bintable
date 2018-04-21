@@ -16,6 +16,7 @@ struct BinTableColumnData
     tabledatatype type;
     char *data;
     BinTableString *name;
+    //In bytes
     uint32_t maxlen;
 };
 

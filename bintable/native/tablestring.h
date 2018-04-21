@@ -11,19 +11,18 @@ class BinTableString {
         //In bytes
         uint32_t size;
         char* data;
+        bool deleteData;
+
 
         BinTableString();
         BinTableString(std::istream& stream);
         void write(std::ostream& stream);   
-        static void read_to_buffer(std::istream& stream, char* buffer);
+        static void read_to_buffer(std::istream& stream, char* buffer, uint32_t& size);
         BinTableString* copy();  
         ~BinTableString();
 
         bool operator==(const BinTableString& other);
         bool operator!=(const BinTableString& other);
-
-    private:
-        bool deleteData;
 };
 
 NAMESPACE_END(NAMESPACE_BINTABLE)

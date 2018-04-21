@@ -30,11 +30,12 @@ inline void write_to_stream_buffered(std::ostream &stream, char* data, std::stre
 
 template <class T>
 inline void write_primitive_to_stream(std::ostream& stream, T& val) {
+    //TODO: add support for endianess
     write_to_stream_buffered(stream, reinterpret_cast<char *>(&val), sizeof(val));
 };
 
 
-inline void clear_buffer(std::istream &stream) {
+inline void clear_buffer() {
     _BUFFER_SIZE = 0;
     _CURRENT_BUFFER_POSITION = 0;
 };

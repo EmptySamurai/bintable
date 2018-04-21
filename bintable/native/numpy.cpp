@@ -1,5 +1,6 @@
 #include "numpy.h"
 #include <map>
+#include <iostream>
 
 using namespace NAMESPACE_BINTABLE;
 
@@ -45,11 +46,11 @@ void NAMESPACE_BINTABLE::column_data_from_numpy_array(PyArrayObject *arr, BinTab
     out.data = PyArray_BYTES(arr);
     out.type = numpy_to_table_types[PyArray_TYPE(arr)];
 
-    if (out.type == BINTABLE_UTF32) {
-        out.maxlen = PyArray_NBYTES(arr)/4/out.size;
-    } else if (out.type == BINTABLE_UTF8) {
-        out.maxlen = PyArray_NBYTES(arr)/out.size;
-    }    
+    if (out.type == BINTABLE_UTF32 || out.type == BINTABLE_UTF8) {
+        out.maxlen = arr->descr->elsize;
+    } else {
+        out.maxlen = DATATYPE_ELEMENT_SIZE[out.type];
+    }; 
 }
 
 PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& columnData) {
@@ -57,14 +58,13 @@ PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& c
     dims[0] = columnData.size;
     
     PyArray_Descr* descr = PyArray_DescrNewFromType(table_to_numpy_types[columnData.type]);
+    descr->byteorder = '<'; 
 
-    if (is_basic_bintable_datatype(columnData.type)) {
-        descr->byteorder = '<';        
-    } else if (columnData.type==BINTABLE_UTF32) {
-        descr->elsize = columnData.maxlen;        
-    }
+    if (columnData.type==BINTABLE_UTF32 || columnData.type==BINTABLE_UTF8) {
+        descr->elsize = columnData.maxlen; 
+    };
 
-    PyObject* result =  PyArray_NewFromDescr( &PyArray_Type, descr, 1, dims, NULL, columnData.data, NPY_OUT_ARRAY, NULL);
+    PyObject* result =  PyArray_NewFromDescr( &PyArray_Type, descr, 1, dims, NULL, columnData.data, NPY_ARRAY_CARRAY, NULL);
 
     delete dims;
 

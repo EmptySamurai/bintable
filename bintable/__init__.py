@@ -1,1 +1,1 @@
-from .bintable import write_table, read_table
+from .bintable import write_table, read_table, write_dict, read_dict

@@ -3,9 +3,7 @@
 
 using namespace NAMESPACE_BINTABLE;
 
-
-void BinTableString::read_to_buffer(std::istream& stream, char* buffer) {
-    uint32_t size = 0;
+void BinTableString::read_to_buffer(std::istream& stream, char* buffer, uint32_t& size) {
     read_primitive_from_stream(stream, size);
     read_from_stream_buffered(stream, buffer, size);
 }

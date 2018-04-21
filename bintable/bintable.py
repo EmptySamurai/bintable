@@ -20,6 +20,12 @@ def write_table(df, filename, append=False):
         os.remove(filename)
     bintable.native.write_table(_df_to_dict(df), filename, append)
 
+def write_dict(columns_dict, filename, append=False):
+    if not append and (os.path.exists(filename)):
+        os.remove(filename)
+    new_dict = {col:_preprocess_column(val) for col, val in columns_dict.items()}
+    bintable.native.write_table(new_dict, filename, append)
+
 def read_dict(filename):
     return bintable.native.read_table(filename)
 

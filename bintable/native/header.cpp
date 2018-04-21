@@ -2,12 +2,19 @@
 #include "ioutils.h"
 #include <iostream>
 #include <fstream>
+#include <iostream>
 
 using namespace NAMESPACE_BINTABLE;
+
 
 BinTableColumnDefinition::BinTableColumnDefinition(std::istream& stream) {
     read_primitive_from_stream(stream, type);
     name = new BinTableString(stream);
+    if (has_maxlen()) {
+        read_primitive_from_stream(stream, maxlen);
+    } else {
+        maxlen = DATATYPE_ELEMENT_SIZE[type];
+    }
 };
 
 BinTableColumnDefinition::BinTableColumnDefinition() = default;
@@ -15,23 +22,18 @@ BinTableColumnDefinition::BinTableColumnDefinition() = default;
 void BinTableColumnDefinition::write(std::ostream& stream) {
     write_primitive_to_stream(stream, type);
     name->write(stream);
+    if (has_maxlen()) {
+        write_primitive_to_stream(stream, maxlen);
+    }
 };
 
 BinTableColumnDefinition::~BinTableColumnDefinition() {
     delete name;
 }
 
-
-BinTableStringColumnDefinition::BinTableStringColumnDefinition(std::istream& stream) : BinTableColumnDefinition(stream) {
-    read_primitive_from_stream(stream, maxlen);
-};
-
-BinTableStringColumnDefinition::BinTableStringColumnDefinition() = default;
-
-void BinTableStringColumnDefinition::write(std::ostream& stream) {
-    BinTableColumnDefinition::write(stream);
-    write_primitive_to_stream(stream, maxlen);
-};
+bool BinTableColumnDefinition::has_maxlen() {
+    return (type == BINTABLE_UTF32) || (type == BINTABLE_UTF8);
+} 
 
 
 
