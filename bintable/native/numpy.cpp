@@ -1,6 +1,7 @@
 #include "numpy.h"
 #include <map>
-#include <iostream>
+#include <exceptions.h>
+
 
 using namespace NAMESPACE_BINTABLE;
 
@@ -24,7 +25,8 @@ std::map<tabledatatype, int> table_to_numpy_types = {{BINTABLE_BOOL, NPY_BOOL},
                                                      {BINTABLE_FLOAT32, NPY_FLOAT32},
                                                      {BINTABLE_FLOAT64, NPY_FLOAT64},
                                                      {BINTABLE_UTF8, NPY_STRING},
-                                                     {BINTABLE_UTF32, NPY_UNICODE}};
+                                                     {BINTABLE_UTF32, NPY_UNICODE},
+                                                     {BINTABLE_OBJECT, NPY_OBJECT}};
 
 std::map<tabledatatype, int> numpy_to_table_types = {{NPY_BOOL, BINTABLE_BOOL},
                                                 {NPY_INT8, BINTABLE_INT8},
@@ -38,12 +40,17 @@ std::map<tabledatatype, int> numpy_to_table_types = {{NPY_BOOL, BINTABLE_BOOL},
                                                 {NPY_FLOAT32, BINTABLE_FLOAT32},
                                                 {NPY_FLOAT64, BINTABLE_FLOAT64},
                                                 {NPY_STRING, BINTABLE_UTF8},
-                                                {NPY_UNICODE, BINTABLE_UTF32}};
+                                                {NPY_UNICODE, BINTABLE_UTF32},
+                                                {NPY_OBJECT, BINTABLE_OBJECT}};
 
 void NAMESPACE_BINTABLE::column_data_from_numpy_array(PyArrayObject *arr, BinTableColumnData &out)
 {
     out.size = PyArray_SIZE(arr);
     out.data = PyArray_BYTES(arr);
+    auto type = PyArray_TYPE(arr);
+    if (!numpy_to_table_types.count(type)) {
+        UnknownDatatypeException("Unknown NumPy datatype: "+arr->descr->type);
+    }
     out.type = numpy_to_table_types[PyArray_TYPE(arr)];
 
     if (out.type == BINTABLE_UTF32 || out.type == BINTABLE_UTF8) {

@@ -1,5 +1,8 @@
 #include "bintable.h"
+#include "pythonutils.h"
+
 #include "ioutils.h"
+#include "Python.h"
 #include <ostream>
 #include <fstream>
 #include <functional>
@@ -46,7 +49,6 @@ inline void _write_row_basic_value(BufferedOutputStream &stream, char *data, uin
     stream.write(data_start, size);
 };
 
-BinTableString _temp_string;
 inline void _write_row_fixed_length_string(BufferedOutputStream &stream, char *data, uint64_t &index, uint8_t size, uint32_t maxlen)
 {
     char *data_start = data + index * maxlen;
@@ -69,9 +71,17 @@ inline void _write_row_fixed_length_string(BufferedOutputStream &stream, char *d
             data_end -= size;
         }
     }
-    _temp_string.data = data_start;
-    _temp_string.size = len;
-    _temp_string.write(stream);
+    BinTableString temp_string;
+    temp_string.data = data_start;
+    temp_string.size = len;
+    temp_string.write(stream);
+}
+
+inline void _write_row_object(BufferedOutputStream &stream, PyObject **data, uint64_t &index)
+{
+    BinTableString temp_string;
+    python_object_to_table_string(data[index], temp_string);
+    temp_string.write(stream);
 }
 
 void _write_rows(std::vector<BinTableColumnData *> &data, BufferedOutputStream &stream)
@@ -82,6 +92,7 @@ void _write_rows(std::vector<BinTableColumnData *> &data, BufferedOutputStream &
     {
         n_rows = data[0]->size;
     };
+
     std::vector<std::function<void(uint64_t &)>> funcs;
     for (uint32_t i = 0; i < n_columns; i++)
     {
@@ -101,6 +112,13 @@ void _write_rows(std::vector<BinTableColumnData *> &data, BufferedOutputStream &
             auto maxlen = column->maxlen;
             funcs.push_back([&stream, data_array, size, maxlen](uint64_t &index) {
                 _write_row_fixed_length_string(stream, data_array, index, size, maxlen);
+            });
+        }
+        else if (column->type == BINTABLE_OBJECT)
+        {
+            PyObject **objects_array = reinterpret_cast<PyObject **>(data_array);
+            funcs.push_back([&stream, objects_array](uint64_t &index) {
+                _write_row_object(stream, objects_array, index);
             });
         }
     }
@@ -133,7 +151,17 @@ void NAMESPACE_BINTABLE::write_table(std::vector<BinTableColumnData *> &data, co
 
     begin = std::chrono::steady_clock::now();
 
-    _write_rows(data, stream);
+    try
+    {
+        _write_rows(data, stream);
+    }
+    catch (std::exception ex)
+    {
+        out_file.close();
+        delete header;
+        throw ex;
+    }
+    
     stream.flush_buffer();
 
     end = std::chrono::steady_clock::now();
@@ -153,6 +181,12 @@ inline void _read_row_fixed_string(BufferedInputStream &stream, char *data, uint
 {
     uint32_t size = 0;
     BinTableString::read_to_buffer(stream, data + maxlen * index, size);
+}
+
+inline void _read_row_object(BufferedInputStream &stream, PyObject **data, uint64_t &index)
+{
+    BinTableString table_string(stream);
+    data[index] = table_string_to_python_object(table_string);
 }
 
 void _read_rows(BinTableHeader *header, BufferedInputStream &stream, std::vector<BinTableColumnData *> &out)
@@ -188,9 +222,17 @@ void _read_rows(BinTableHeader *header, BufferedInputStream &stream, std::vector
         {
             auto data_array_size = n_rows * maxlen;
             data_array = new char[data_array_size];
-            std::fill(data_array, data_array+data_array_size, 0);
+            std::fill(data_array, data_array + data_array_size, 0);
             funcs.push_back([&stream, data_array, maxlen](uint64_t &index) {
                 _read_row_fixed_string(stream, data_array, index, maxlen);
+            });
+        }
+        else if (column_header->type == BINTABLE_OBJECT)
+        {
+            PyObject **objects_array = new PyObject *[n_rows];
+            data_array = reinterpret_cast<char *>(objects_array);
+            funcs.push_back([&stream, objects_array](uint64_t &index) {
+                _read_row_object(stream, objects_array, index);
             });
         }
 
@@ -213,7 +255,7 @@ void NAMESPACE_BINTABLE::read_table(const std::string &path, std::vector<BinTabl
     std::ifstream in_file;
     in_file.open(path, std::ios::binary);
 
-    BufferedInputStream stream(in_file, BUFFER_SIZE); 
+    BufferedInputStream stream(in_file, BUFFER_SIZE);
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
@@ -224,12 +266,28 @@ void NAMESPACE_BINTABLE::read_table(const std::string &path, std::vector<BinTabl
 
     begin = std::chrono::steady_clock::now();
 
-    _read_rows(header, stream, out);
+    try
+    {
+        _read_rows(header, stream, out);
+    }
+    catch (std::exception ex)
+    {
+        delete header;
+        for (auto col : out)
+        {
+            delete col->data;
+            delete col->name;
+            delete col;
+        }
+        out.clear();
+
+        in_file.close();
+
+        throw ex;
+    }
 
     end = std::chrono::steady_clock::now();
     std::cout << "Reading body = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
-
-    in_file.close();
 
     delete header;
 }

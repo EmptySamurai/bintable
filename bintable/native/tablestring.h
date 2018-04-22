@@ -12,7 +12,7 @@ class BinTableString {
         //In bytes
         uint32_t size;
         char* data;
-        bool deleteData;
+        bool delete_data;
 
 
         BinTableString();

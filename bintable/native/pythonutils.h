@@ -3,23 +3,15 @@
 #include "Python.h"
 #include "tablestring.h"
 
+
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
-BinTableString* python_string_to_table_string(PyObject* obj) {
-    Py_ssize_t size = 0;
-    char* data = PyUnicode_AsUTF8AndSize(obj, &size);
+void python_string_to_table_string(PyObject* obj, BinTableString& out);
 
-    auto result = new BinTableString();
-    result->data = data;
-    result->size = size;
+PyObject* table_string_to_python_string(BinTableString& str);
 
-    return result;
-}
+void python_object_to_table_string(PyObject* obj, BinTableString& out);
 
-PyObject* table_string_to_python_string(BinTableString* str) {
-    const char *errors = NULL;
-    return PyUnicode_DecodeUTF8(str->data, str->size, errors);
-}
-
+PyObject* table_string_to_python_object(BinTableString& str);
 
 NAMESPACE_END(NAMESPACE_BINTABLE)

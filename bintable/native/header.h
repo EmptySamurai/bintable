@@ -40,6 +40,7 @@ class BinTableHeader {
 
     explicit BinTableHeader(BufferedInputStream& stream);
         void write(BufferedOutputStream& stream);
+        void delete_columns();
         ~BinTableHeader();
  };
 

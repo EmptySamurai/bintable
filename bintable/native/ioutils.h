@@ -1,9 +1,8 @@
 #pragma once
 #include "common.h"
 #include <istream>
-#include <ostream>
-
-#include <stdexcept>
+#include <iostream>
+#include "exceptions.h"
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
@@ -29,7 +28,7 @@ class BufferedInputStream
 
             if (bytesLeftNotWritten != stream->gcount())
             {
-                throw std::length_error("Not enough bytes to read");
+                throw StreamFinishedException("Not enough bytes to read");
             }
 
             stream->read(buffer, buffer_max_size);

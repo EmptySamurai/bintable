@@ -12,12 +12,17 @@ void BinTableString::read_to_buffer(BufferedInputStream& stream, char* buffer, u
 BinTableString::BinTableString(BufferedInputStream& stream) {
     stream.read_primitive(size);
     data = new char[size];
-    stream.read(data, size);
-    deleteData = true;
+    try{
+        stream.read(data, size);
+    } catch (std::exception ex) {
+        delete[] data;
+        throw ex;
+    }
+    delete_data = true;
 };
 
 BinTableString::BinTableString() {
-    deleteData = false;
+    delete_data = false;
 };
 
 void BinTableString::write(BufferedOutputStream& stream) {
@@ -32,12 +37,12 @@ BinTableString* BinTableString::copy() {
 
     result->size = size;
     result->data = new_data;
-    result->deleteData = true;
+    result->delete_data = true;
     return result;
 };
 
 BinTableString::~BinTableString() {
-    if (deleteData) {
+    if (delete_data) {
         delete[] data; 
     }   
 }

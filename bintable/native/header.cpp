@@ -1,14 +1,16 @@
 #include "header.h"
 #include "ioutils.h"
-#include <iostream>
-#include <fstream>
-#include <iostream>
+#include "exceptions.h"
+
 
 using namespace NAMESPACE_BINTABLE;
 
 
 BinTableColumnDefinition::BinTableColumnDefinition(BufferedInputStream& stream) {
     stream.read_primitive(type);
+    if (!is_valid_datatype(type)) {
+        throw UnknownDatatypeException("Unknown datatype");
+    }
     name = new BinTableString(stream);
     if (has_maxlen()) {
         stream.read_primitive(maxlen);
@@ -44,8 +46,13 @@ BinTableHeader::BinTableHeader(BufferedInputStream& stream) {
 
     columns = new std::vector<BinTableColumnDefinition*>();
     columns->reserve(n_columns);
-    for (auto i=0; i< n_columns; i++) {
-        columns->push_back(new BinTableColumnDefinition(stream));
+    try {
+        for (auto i=0; i< n_columns; i++) {
+            columns->push_back(new BinTableColumnDefinition(stream));
+        }
+    } catch (std::exception ex) {
+        delete_columns();
+        throw ex;
     }
 };
 
@@ -61,11 +68,15 @@ void BinTableHeader::write(BufferedOutputStream& stream) {
     }
 };
 
-BinTableHeader::~BinTableHeader() {
+void BinTableHeader::delete_columns() {
     if (columns != nullptr) {
         for (auto &column : *columns) {
             delete column;
         }
     }
     delete columns;
+}
+
+BinTableHeader::~BinTableHeader() {
+    delete_columns();
 };

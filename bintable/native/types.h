@@ -28,10 +28,15 @@ const tabledatatype BINTABLE_FLOAT64 = 10;
 const tabledatatype BINTABLE_UTF8 = 11;
 const tabledatatype BINTABLE_UTF32 = 12;
 
+const tabledatatype BINTABLE_OBJECT = 13;
 
-const uint8_t DATATYPE_ELEMENT_SIZE[] = {1,1,1,2,2,4,4,8,8,4,8,1,4};
+
+const uint8_t DATATYPE_ELEMENT_SIZE[] = {1,1,1,2,2,4,4,8,8,4,8,1,4, 1};
 
 bool is_basic_bintable_datatype(tabledatatype type);
+
+bool is_valid_datatype(tabledatatype type);
+
 
 NAMESPACE_END(NAMESPACE_BINTABLE)
 
