@@ -97,6 +97,7 @@ class BufferedOutputStream
     }
 
     ~BufferedOutputStream() {
+        flush_buffer();
         delete[] buffer;
     }
 
@@ -106,5 +107,18 @@ class BufferedOutputStream
     char *buffer;
     std::streamsize buffer_size;
 };
+
+// int truncate(int fd, long size)
+// {
+// #ifdef _WIN32 || _WIN64 
+//     return _chsize(fd, size);
+// #else
+//   #ifdef POSIX
+//     return ftruncate(fd, size);
+//   #else
+//     // code for other OSes
+//   #endif
+// #endif
+// }
 
 NAMESPACE_END(NAMESPACE_BINTABLE)

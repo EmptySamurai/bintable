@@ -11,14 +11,16 @@ const uint64_t CURRENT_VERSION = 1;
 
 class BinTableColumnDefinition { 
     public:
-        tabledatatype type;
-        BinTableString* name; 
+        tabledatatype type = UINT32_MAX;
+        BinTableString* name = nullptr; 
         //In bytes. Optional 
-        uint32_t maxlen;
+        uint32_t maxlen = 0;
         
         BinTableColumnDefinition();
 
     explicit BinTableColumnDefinition(BufferedInputStream& stream);
+
+    BinTableColumnDefinition(const BinTableColumnDefinition& other);
 
     virtual void write(BufferedOutputStream& stream);
 
@@ -31,12 +33,13 @@ class BinTableColumnDefinition {
 
 class BinTableHeader {
     public:
-        uint32_t version;
+        uint32_t version = CURRENT_VERSION;
         uint64_t n_rows;
         uint32_t n_columns;
-        std::vector<BinTableColumnDefinition*>* columns;
+        std::vector<BinTableColumnDefinition*>* columns = nullptr;
 
         BinTableHeader();
+        BinTableHeader(const BinTableHeader& other);
 
     explicit BinTableHeader(BufferedInputStream& stream);
         void write(BufferedOutputStream& stream);

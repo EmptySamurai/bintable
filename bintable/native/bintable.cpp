@@ -6,6 +6,9 @@
 #include <ostream>
 #include <fstream>
 #include <functional>
+#include <map>
+#include <algorithm>
+#include <sstream>
 #include <chrono>
 #include <iostream>
 
@@ -13,34 +16,93 @@ using namespace NAMESPACE_BINTABLE;
 
 const int BUFFER_SIZE = 100000;
 
-BinTableHeader *_create_header(std::vector<BinTableColumnData *> &data)
+BinTableHeader _create_header(std::vector<BinTableColumnData *> &data)
 {
-    auto *header = new BinTableHeader();
-    header->version = CURRENT_VERSION;
+    BinTableHeader header;
+    header.version = CURRENT_VERSION;
     uint32_t n_columns = data.size();
-    header->n_columns = n_columns;
+    header.n_columns = n_columns;
     if (data.empty())
     {
-        header->n_rows = 0;
+        header.n_rows = 0;
     }
     else
     {
-        header->n_rows = data[0]->size;
+        header.n_rows = data[0]->size;
     }
 
-    header->columns = new std::vector<BinTableColumnDefinition *>();
-    header->columns->reserve(n_columns);
+    header.columns = new std::vector<BinTableColumnDefinition *>();
+    header.columns->reserve(n_columns);
     for (auto i = 0; i < n_columns; i++)
     {
         auto *column_data = data[i];
         auto type = column_data->type;
         BinTableColumnDefinition *column = new BinTableColumnDefinition();
         column->type = column_data->type;
-        column->name = column_data->name->copy();
+        column->name = new BinTableString(*(column_data->name));
         column->maxlen = column_data->maxlen;
-        header->columns->push_back(column);
+        header.columns->push_back(column);
     }
     return header;
+}
+
+BinTableHeader _validate_and_get_header(std::vector<BinTableColumnData *> &data, const std::string &path, bool append)
+{
+    if (!append)
+    {
+        return _create_header(data);
+    }
+
+    std::ifstream out_file;
+    out_file.open(path, std::ios::binary);
+    BufferedInputStream stream(out_file, BUFFER_SIZE);
+
+    BinTableHeader old_header(stream);
+    BinTableHeader new_header = _create_header(data);
+
+    std::stringstream error;
+
+    if (new_header.n_columns != old_header.n_columns)
+    {
+        error << "Old and new number of columns mismatch " << old_header.n_columns << "!=" << new_header.n_columns;
+        throw AppendException(error.str().c_str());
+    }
+
+    old_header.n_rows += new_header.n_rows;
+
+    std::map<BinTableString, BinTableColumnDefinition *> columns_index;
+    for (auto new_col : *(new_header.columns))
+    {
+        columns_index[*(new_col->name)] = new_col;
+    }
+
+    for (auto old_col : *(old_header.columns))
+    {
+        auto &col_name = *(old_col->name);
+        auto it = columns_index.find(col_name);
+
+        if (it == columns_index.end())
+        {
+            error << "Missing column \"";
+            error.write(col_name.data, col_name.size);
+            error << "\"";
+            throw AppendException(error.str().c_str());
+        }
+
+        auto new_col = it->second;
+
+        if (new_col->type != old_col->type)
+        {
+            error << "Mismatching types for column \"";
+            error.write(col_name.data, col_name.size);
+            error << "\"";
+            throw AppendException(error.str().c_str());
+        }
+
+        old_col->maxlen = std::max(old_col->maxlen, new_col->maxlen);
+    }
+
+    return old_header;
 }
 
 inline void _write_row_basic_value(BufferedOutputStream &stream, char *data, uint64_t &index, uint8_t size)
@@ -134,42 +196,35 @@ void _write_rows(std::vector<BinTableColumnData *> &data, BufferedOutputStream &
 
 void NAMESPACE_BINTABLE::write_table(std::vector<BinTableColumnData *> &data, const std::string &path, bool append)
 {
-    BinTableHeader *header;
     std::ofstream out_file;
+    auto flags = std::ios::out | std::ios::binary;
+    if (append) {
+        flags = flags | std::ios::in;
+    } else {
+        flags = flags | std::ios::trunc;
+    }
 
+    out_file.open(path, flags);
     BufferedOutputStream stream(out_file, BUFFER_SIZE);
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-    out_file.open(path, std::ios::binary);
+    BinTableHeader header = _validate_and_get_header(data, path, append);
+    header.write(stream);
+    //Flushing buffer before seek
+    stream.flush_buffer();
 
-    header = _create_header(data);
-    header->write(stream);
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Writing header = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
 
     begin = std::chrono::steady_clock::now();
 
-    try
-    {
-        _write_rows(data, stream);
-    }
-    catch (std::exception ex)
-    {
-        out_file.close();
-        delete header;
-        throw ex;
-    }
-    
-    stream.flush_buffer();
+    out_file.seekp(0, std::ios_base::end);
+    _write_rows(data, stream);
 
     end = std::chrono::steady_clock::now();
     std::cout << "Writing body = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
-
-    out_file.close();
-
-    delete header;
 }
 
 inline void _read_row_basic_value(BufferedInputStream &stream, char *data, uint64_t &index, uint8_t size)
@@ -189,22 +244,22 @@ inline void _read_row_object(BufferedInputStream &stream, PyObject **data, uint6
     data[index] = table_string_to_python_object(table_string);
 }
 
-void _read_rows(BinTableHeader *header, BufferedInputStream &stream, std::vector<BinTableColumnData *> &out)
+void _read_rows(BinTableHeader &header, BufferedInputStream &stream, std::vector<BinTableColumnData *> &out)
 {
 
-    auto n_columns = header->n_columns;
-    auto n_rows = header->n_rows;
+    auto n_columns = header.n_columns;
+    auto n_rows = header.n_rows;
 
     std::vector<std::function<void(uint64_t &)>> funcs;
     for (uint32_t i = 0; i < n_columns; i++)
     {
-        auto column_header = (*(header->columns))[i];
+        auto column_header = (*(header.columns))[i];
         auto column_data = new BinTableColumnData();
 
         auto type = column_header->type;
         column_data->type = type;
-        column_data->name = column_header->name->copy();
-        column_data->size = header->n_rows;
+        column_data->name = new BinTableString(*(column_header->name));
+        column_data->size = header.n_rows;
         auto maxlen = column_header->maxlen;
         column_data->maxlen = maxlen;
 
@@ -259,7 +314,7 @@ void NAMESPACE_BINTABLE::read_table(const std::string &path, std::vector<BinTabl
 
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-    BinTableHeader *header = new BinTableHeader(stream);
+    BinTableHeader header(stream);
 
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Reading header = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
@@ -272,22 +327,16 @@ void NAMESPACE_BINTABLE::read_table(const std::string &path, std::vector<BinTabl
     }
     catch (std::exception ex)
     {
-        delete header;
         for (auto col : out)
         {
             delete col->data;
             delete col->name;
             delete col;
         }
-        out.clear();
-
-        in_file.close();
 
         throw ex;
     }
 
     end = std::chrono::steady_clock::now();
     std::cout << "Reading body = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
-
-    delete header;
 }

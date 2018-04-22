@@ -4,8 +4,10 @@
 #include "numpy.h"
 #include <vector>
 #include <string>
+#include <cstdio>
 #include <pybind11/pybind11.h>
 #include <numpy/arrayobject.h>
+
 
 namespace py = pybind11;
 
@@ -39,6 +41,9 @@ void write_table_interface(const py::dict columns_dict, const std::string &path,
     catch (std::exception ex)
     {
         _delete_columns(columns);
+        if (!append) {
+            remove(path.c_str());
+        }
         throw ex;
     }
     _delete_columns(columns);

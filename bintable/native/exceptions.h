@@ -17,5 +17,10 @@ class UnknownDatatypeException : public std::exception {
     using std::exception::exception;
 };
 
+class AppendException : public std::exception {
+    using std::exception::exception;
+};
+
+
 NAMESPACE_END(NAMESPACE_BINTABLE)
 

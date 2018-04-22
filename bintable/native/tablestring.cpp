@@ -21,24 +21,18 @@ BinTableString::BinTableString(BufferedInputStream& stream) {
     delete_data = true;
 };
 
-BinTableString::BinTableString() {
-    delete_data = false;
+BinTableString::BinTableString(const BinTableString& other) {
+    size = other.size;
+    data = new char[size];
+    std::copy(other.data, other.data+size, data);
+    delete_data = true;
 };
+
+BinTableString::BinTableString() = default;
 
 void BinTableString::write(BufferedOutputStream& stream) {
     stream.write_primitive(size);
     stream.write(data, size);
-};
-
-BinTableString* BinTableString::copy() {
-    auto result = new BinTableString();
-    char* new_data = new char[size];
-    std::copy(data, data+size, new_data);
-
-    result->size = size;
-    result->data = new_data;
-    result->delete_data = true;
-    return result;
 };
 
 BinTableString::~BinTableString() {
@@ -60,7 +54,7 @@ bool BinTableString::operator==(const BinTableString& other) {
         return false;
     }
 
-    for (auto i=0; i<size; i++) {
+    for (uint32_t i=0; i<size; i++) {
         if (data[i]!=other.data[i]) {
             return false;
         }
@@ -72,4 +66,18 @@ bool BinTableString::operator==(const BinTableString& other) {
 
 bool BinTableString::operator!=(const BinTableString& other) {
     return !((*this)==other);
+}
+
+bool BinTableString::operator<(const BinTableString& other) const {
+    if (size != other.size) {
+        return size<other.size;
+    }
+
+    for (uint32_t i=0; i<size; i++) {
+        if (data[i]!=other.data[i]) {
+            return data[i]<other.data[i];
+        }
+    }
+
+    return false;
 }

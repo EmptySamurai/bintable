@@ -27,10 +27,12 @@ def write_load_table(d, append = False):
     read_func = bintable.read_dict if isinstance(d, dict) else bintable.read_table
 
     filename = "temp.bt"
-    write_func(d, filename, append=append)
-    result = read_func(filename)
-    os.remove(filename)
-    return result
+    try:
+        write_func(d, filename, append=append)
+        result = read_func(filename)
+        return result
+    finally:
+        os.remove(filename)
 
 class TestBinaryTable(unittest.TestCase):
 
@@ -77,6 +79,15 @@ class TestBinaryTable(unittest.TestCase):
         self.assertEqual(sys.getrefcount(first_col), 2, "Column name has too many references")
         self.assertEqual(sys.getrefcount(first_arr), 2, "Array has too many references")
         
+    def test_append(self):
+        filename = "temp_append.bt"
+        df = pd.DataFrame({"COL": ["aacc","bb","ccc"]})
+        bintable.write_table(df, filename)
+        bintable.write_table(df, filename, append=True)        
+        df_new = bintable.read_table(filename)
+
+        os.remove(filename)
+        self._compare_dfs(pd.concat([df,df]), df_new)
         
 
 if __name__ == '__main__':
