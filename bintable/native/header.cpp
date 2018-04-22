@@ -7,11 +7,11 @@
 using namespace NAMESPACE_BINTABLE;
 
 
-BinTableColumnDefinition::BinTableColumnDefinition(std::istream& stream) {
-    read_primitive_from_stream(stream, type);
+BinTableColumnDefinition::BinTableColumnDefinition(BufferedInputStream& stream) {
+    stream.read_primitive(type);
     name = new BinTableString(stream);
     if (has_maxlen()) {
-        read_primitive_from_stream(stream, maxlen);
+        stream.read_primitive(maxlen);
     } else {
         maxlen = DATATYPE_ELEMENT_SIZE[type];
     }
@@ -19,11 +19,11 @@ BinTableColumnDefinition::BinTableColumnDefinition(std::istream& stream) {
 
 BinTableColumnDefinition::BinTableColumnDefinition() = default;
 
-void BinTableColumnDefinition::write(std::ostream& stream) {
-    write_primitive_to_stream(stream, type);
+void BinTableColumnDefinition::write(BufferedOutputStream& stream) {
+    stream.write_primitive(type);
     name->write(stream);
     if (has_maxlen()) {
-        write_primitive_to_stream(stream, maxlen);
+        stream.write_primitive(maxlen);
     }
 };
 
@@ -37,10 +37,10 @@ bool BinTableColumnDefinition::has_maxlen() {
 
 
 
-BinTableHeader::BinTableHeader(std::istream& stream) {
-    read_primitive_from_stream(stream, version);
-    read_primitive_from_stream(stream, n_rows);
-    read_primitive_from_stream(stream, n_columns);
+BinTableHeader::BinTableHeader(BufferedInputStream& stream) {
+    stream.read_primitive(version);
+    stream.read_primitive(n_rows);
+    stream.read_primitive(n_columns);
 
     columns = new std::vector<BinTableColumnDefinition*>();
     columns->reserve(n_columns);
@@ -51,10 +51,10 @@ BinTableHeader::BinTableHeader(std::istream& stream) {
 
 BinTableHeader::BinTableHeader() = default;
 
-void BinTableHeader::write(std::ostream& stream) {
-    write_primitive_to_stream(stream, version);
-    write_primitive_to_stream(stream, n_rows);
-    write_primitive_to_stream(stream, n_columns);
+void BinTableHeader::write(BufferedOutputStream& stream) {
+    stream.write_primitive(version);
+    stream.write_primitive(n_rows);
+    stream.write_primitive(n_columns);
 
     for (auto i=0; i< n_columns; i++) {
         (*columns)[i]->write(stream);

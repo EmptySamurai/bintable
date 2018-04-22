@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
 void column_data_from_numpy_array(PyArrayObject *arr, BinTableColumnData& out);
-PyObject* numpy_array_from_column_data(BinTableColumnData& columnData);
+PyObject* numpy_array_from_column_data(BinTableColumnData& column_data);
 
 NAMESPACE_END(NAMESPACE_BINTABLE)
 

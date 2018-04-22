@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <istream>
 #include <vector>
 #include "common.h"
 #include "tablestring.h"
@@ -19,9 +18,9 @@ class BinTableColumnDefinition {
         
         BinTableColumnDefinition();
 
-    explicit BinTableColumnDefinition(std::istream& stream);
+    explicit BinTableColumnDefinition(BufferedInputStream& stream);
 
-    virtual void write(std::ostream& stream);
+    virtual void write(BufferedOutputStream& stream);
 
     virtual ~BinTableColumnDefinition();
 
@@ -39,8 +38,8 @@ class BinTableHeader {
 
         BinTableHeader();
 
-    explicit BinTableHeader(std::istream& stream);
-        void write(std::ostream& stream);
+    explicit BinTableHeader(BufferedInputStream& stream);
+        void write(BufferedOutputStream& stream);
         ~BinTableHeader();
  };
 

@@ -1,73 +1,111 @@
 #pragma once
 #include "common.h"
 #include <istream>
-#include <stdexcept>
+#include <ostream>
 
+#include <stdexcept>
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
-extern const int _BUFFER_MAX_SIZE;
-extern char _BUFFER [];
-extern std::streamsize _BUFFER_SIZE;
-extern std::streamsize _CURRENT_BUFFER_POSITION;
+class BufferedInputStream
+{
 
-
-
-inline void flush_buffer(std::ostream &stream) {
-    stream.write(_BUFFER, _BUFFER_SIZE);
-    _BUFFER_SIZE = 0;
-};
-
-inline void write_to_stream_buffered(std::ostream &stream, char* data, std::streamsize size) {
-    if (_BUFFER_SIZE + size>_BUFFER_MAX_SIZE) {
-        flush_buffer(stream);
-        stream.write(data, size);
-    } else {
-        std::copy(data, data+size, _BUFFER+_BUFFER_SIZE);
-        _BUFFER_SIZE+=size;
+  public:
+    BufferedInputStream(std::istream& stream, std::size_t buffer_max_size) : buffer_max_size(buffer_max_size)
+    {
+        this->stream = &stream;
+        buffer = new char[buffer_max_size];
+        buffer_size = 0;
+        current_buffer_position = 0;
     }
-};
+    void read(char *data, std::streamsize size)
+    {
+        std::streamsize bytesLeftInBuffer = buffer_size - current_buffer_position;
+        if (bytesLeftInBuffer < size)
+        {
+            std::copy(buffer + current_buffer_position, buffer + buffer_size, data);
+            std::streamsize bytesLeftNotWritten = size - bytesLeftInBuffer;
+            stream->read(data + bytesLeftInBuffer, bytesLeftNotWritten);
 
-template <class T>
-inline void write_primitive_to_stream(std::ostream& stream, T& val) {
-    //TODO: add support for endianess
-    write_to_stream_buffered(stream, reinterpret_cast<char *>(&val), sizeof(val));
-};
+            if (bytesLeftNotWritten != stream->gcount())
+            {
+                throw std::length_error("Not enough bytes to read");
+            }
 
-
-inline void clear_buffer() {
-    _BUFFER_SIZE = 0;
-    _CURRENT_BUFFER_POSITION = 0;
-};
-
-inline void read_from_stream_buffered(std::istream &stream, char* data, std::streamsize size) {
-    std::streamsize bytesLeftInBuffer = _BUFFER_SIZE - _CURRENT_BUFFER_POSITION;
-    if (bytesLeftInBuffer<size) {
-        std::copy(_BUFFER+_CURRENT_BUFFER_POSITION, _BUFFER+_BUFFER_SIZE, data);
-        std::streamsize bytesLeftNotWritten = size-bytesLeftInBuffer;
-        stream.read(data+bytesLeftInBuffer, bytesLeftNotWritten);
-
-        if (bytesLeftNotWritten != stream.gcount()) {
-            throw std::length_error("Not enough bytes to read");
+            stream->read(buffer, buffer_max_size);
+            current_buffer_position = 0;
+            buffer_size = stream->gcount();
         }
+        else
+        {
+            std::copy(buffer + current_buffer_position, buffer + current_buffer_position + size, data);
+            current_buffer_position += size;
+        }
+    };
 
-
-        stream.read(_BUFFER, _BUFFER_MAX_SIZE);
-        _CURRENT_BUFFER_POSITION=0;
-        _BUFFER_SIZE = stream.gcount();
-    } else {
-        std::copy(_BUFFER+_CURRENT_BUFFER_POSITION, _BUFFER+_CURRENT_BUFFER_POSITION+size, data);
-        _CURRENT_BUFFER_POSITION+=size;
+    template <class T>
+    void read_primitive(T &val)
+    {
+        read(reinterpret_cast<char *>(&val), sizeof(val));
     }
+    ~BufferedInputStream() {
+        delete[] buffer;
+    }
+
+  private:
+    std::istream* stream;
+    std::size_t buffer_max_size;
+    char *buffer;
+    std::streamsize buffer_size;
+    std::streamsize current_buffer_position;
 };
 
+class BufferedOutputStream
+{
 
+  public:
+    BufferedOutputStream(std::ostream& stream, std::size_t buffer_max_size)  : buffer_max_size(buffer_max_size)
+    {
+        this->stream = &stream;
+        buffer = new char[buffer_max_size];
+        buffer_size = 0;
+    }
 
-template <class T>
-void read_primitive_from_stream(std::istream& stream, T& val) {
-    read_from_stream_buffered(stream, reinterpret_cast<char *>(&val), sizeof(val));
+    void flush_buffer()
+    {
+        stream->write(buffer, buffer_size);
+        buffer_size = 0;
+    };
+
+    void write(char *data, std::streamsize size)
+    {
+        if (buffer_size + size > buffer_max_size)
+        {
+            flush_buffer();
+            stream->write(data, size);
+        }
+        else
+        {
+            std::copy(data, data + size, buffer + buffer_size);
+            buffer_size += size;
+        }
+    };
+
+    template <class T>
+    void write_primitive(T &val)
+    {
+        write(reinterpret_cast<char *>(&val), sizeof(val));
+    }
+
+    ~BufferedOutputStream() {
+        delete[] buffer;
+    }
+
+  private:
+    std::ostream* stream;
+    std::size_t buffer_max_size;
+    char *buffer;
+    std::streamsize buffer_size;
 };
 
 NAMESPACE_END(NAMESPACE_BINTABLE)
-
-

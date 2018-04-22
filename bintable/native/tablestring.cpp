@@ -3,16 +3,16 @@
 
 using namespace NAMESPACE_BINTABLE;
 
-void BinTableString::read_to_buffer(std::istream& stream, char* buffer, uint32_t& size) {
-    read_primitive_from_stream(stream, size);
-    read_from_stream_buffered(stream, buffer, size);
+void BinTableString::read_to_buffer(BufferedInputStream& stream, char* buffer, uint32_t& size) {
+    stream.read_primitive(size);
+    stream.read(buffer, size);
 }
 
 
-BinTableString::BinTableString(std::istream& stream) {
-    read_primitive_from_stream(stream, size);
+BinTableString::BinTableString(BufferedInputStream& stream) {
+    stream.read_primitive(size);
     data = new char[size];
-    read_from_stream_buffered(stream, data, size);
+    stream.read(data, size);
     deleteData = true;
 };
 
@@ -20,18 +20,18 @@ BinTableString::BinTableString() {
     deleteData = false;
 };
 
-void BinTableString::write(std::ostream& stream) {
-    write_primitive_to_stream(stream, size);
-    write_to_stream_buffered(stream, data, size);
+void BinTableString::write(BufferedOutputStream& stream) {
+    stream.write_primitive(size);
+    stream.write(data, size);
 };
 
 BinTableString* BinTableString::copy() {
     auto result = new BinTableString();
-    char* newData = new char[size];
-    std::copy(data, data+size, newData);
+    char* new_data = new char[size];
+    std::copy(data, data+size, new_data);
 
     result->size = size;
-    result->data = newData;
+    result->data = new_data;
     result->deleteData = true;
     return result;
 };

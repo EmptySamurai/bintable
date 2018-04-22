@@ -1,7 +1,8 @@
 #pragma once
 #include <cstdint>
-#include <istream>
 #include "common.h"
+#include "ioutils.h"
+
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
@@ -15,9 +16,9 @@ class BinTableString {
 
 
         BinTableString();
-        BinTableString(std::istream& stream);
-        void write(std::ostream& stream);   
-        static void read_to_buffer(std::istream& stream, char* buffer, uint32_t& size);
+        BinTableString(BufferedInputStream& stream);
+        void write(BufferedOutputStream& stream);   
+        static void read_to_buffer(BufferedInputStream& stream, char* buffer, uint32_t& size);
         BinTableString* copy();  
         ~BinTableString();
 
