@@ -141,7 +141,7 @@ inline void _write_row_object(BufferedOutputStream &stream, PyObject **data, uin
     temp_string.write(stream);
 }
 
-void _write_rows(std::vector<BinTableColumnData *> &data, BufferedOutputStream &stream)
+void _write_rows_block(std::vector<BinTableColumnData *> &data, BufferedOutputStream &stream)
 {
     uint32_t n_columns = data.size();
     uint64_t n_rows = 0;
@@ -211,7 +211,7 @@ void NAMESPACE_BINTABLE::write_table(std::vector<BinTableColumnData *> &data, co
     begin = std::chrono::steady_clock::now();
 
     out_file.seekp(0, std::ios_base::end);
-    _write_rows(data, stream);
+    _write_rows_block(data, stream);
 
     end = std::chrono::steady_clock::now();
     std::cout << "Writing body = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
