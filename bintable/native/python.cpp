@@ -90,6 +90,8 @@ PYBIND11_MODULE(native, m)
 {
     m.doc() = "Bintable native code"; // optional module docstring
 
+
+    m.attr("USE_LITTLE_ENDIAN") = py::int_(USE_LITTLE_ENDIAN);
     m.def("write_table", &write_table_interface, "Function to write table");
     m.def("read_table", &read_table_interface, "Function to read table");
     m.def("read_header", &read_header_interface, "Function to read header");

@@ -32,7 +32,7 @@ BinTableHeader _create_header(std::vector<BinTableColumnData *> &data)
     }
 
     header.columns.reserve(n_columns);
-    for (auto i = 0; i < n_columns; i++)
+    for (uint32_t i = 0; i < n_columns; i++)
     {
         auto *column_data = data[i];
         header.columns.emplace_back();
@@ -47,7 +47,7 @@ BinTableHeader _create_header(std::vector<BinTableColumnData *> &data)
 template <class T>
 struct ptr_less
 {
-    bool operator()(T *lhs, T *rhs)
+    bool operator()(const T* lhs, const T* rhs) const
     {
         return *lhs < *rhs;
     }
@@ -75,13 +75,17 @@ BinTableHeader _validate_and_get_header(std::vector<BinTableColumnData *> &data,
 
     old_header.n_rows += new_header.n_rows;
 
-    std::map<BinTableString *, BinTableColumnDefinition *, ptr_less<BinTableString>> columns_index;
+    std::map<BinTableString *, uint32_t, ptr_less<BinTableString>> columns_index;
 
-    for (auto it = new_header.columns.begin(); it != new_header.columns.end(); it++)
+    uint32_t index_for_map = 0;
+    for (uint32_t i=0; i<new_header.n_columns; i++)
     {
-        auto col = &(*it);
-        columns_index[col->name] = col;
+        auto &col = new_header.columns.data()[i];
+        columns_index[col.name] = i;
     }
+
+    std::vector<BinTableColumnData *> ordered_data;
+    ordered_data.reserve(old_header.n_columns);
 
     for (auto it = old_header.columns.begin(); it != old_header.columns.end(); it++)
     {
@@ -93,15 +97,20 @@ BinTableHeader _validate_and_get_header(std::vector<BinTableColumnData *> &data,
             throw AppendException("Missing column \"" + old_col.name->to_string() + "\"");
         }
 
-        auto new_col = map_it->second;
+        auto new_col_index = map_it->second;
+        auto &new_col = new_header.columns.data()[new_col_index];
 
-        if (new_col->type != old_col.type)
+        if (new_col.type != old_col.type)
         {
             throw AppendException("Mismatching types for column \"" + old_col.name->to_string() + "\"");
         }
 
-        old_col.maxlen = std::max(old_col.maxlen, new_col->maxlen);
+        old_col.maxlen = std::max(old_col.maxlen, new_col.maxlen);
+
+        ordered_data.push_back(data[new_col_index]);
     }
+
+    data.swap(ordered_data);
 
     return old_header;
 }
@@ -271,13 +280,13 @@ void _read_rows(BinTableHeader &header, BufferedInputStream &stream, std::vector
         out.push_back(column_data);
     }
 
-    uint64_t start_row_index = 0;
-    while (start_row_index < n_rows)
+    uint64_t start_block_index = 0;
+    while (start_block_index < n_rows)
     {
         uint64_t n_block_rows = 0;
         stream.read_primitive(n_block_rows);
 
-        if (n_block_rows + start_row_index > n_rows)
+        if (n_block_rows + start_block_index > n_rows)
         {
             throw BinTableException("Too many blocks");
         }
@@ -291,13 +300,13 @@ void _read_rows(BinTableHeader &header, BufferedInputStream &stream, std::vector
 
             if (is_basic_bintable_datatype(col->type))
             {
-                stream.read(data_array + start_row_index * size, size * n_block_rows);
+                stream.read(data_array + start_block_index * size, size * n_block_rows);
             }
             else if (col->type == BINTABLE_UTF32 || col->type == BINTABLE_UTF8)
             {
                 for (uint64_t i = 0; i < n_block_rows; i++)
                 {
-                    _read_row_fixed_string(stream, data_array, i + start_row_index, col->maxlen);
+                    _read_row_fixed_string(stream, data_array, i + start_block_index, col->maxlen);
                 }
             }
             else if (col->type == BINTABLE_OBJECT)
@@ -305,12 +314,12 @@ void _read_rows(BinTableHeader &header, BufferedInputStream &stream, std::vector
                 PyObject **objects_array = reinterpret_cast<PyObject **>(data_array);
                 for (uint64_t i = 0; i < n_block_rows; i++)
                 {
-                    _read_row_object(stream, objects_array, i + start_row_index);
+                    _read_row_object(stream, objects_array, i + start_block_index);
                 }
             }
         }
 
-        start_row_index += n_block_rows; 
+        start_block_index += n_block_rows; 
     }
 }
 

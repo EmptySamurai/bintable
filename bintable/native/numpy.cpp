@@ -66,8 +66,13 @@ PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& c
     
     PyArray_Descr* descr = PyArray_DescrNewFromType(table_to_numpy_types[column_data.type]);
 
-    if (column_data.type != BINTABLE_OBJECT) {
-        descr->byteorder = '<'; 
+    if ((column_data.type != BINTABLE_OBJECT) && (column_data.type != BINTABLE_BOOL)
+     && (column_data.type != BINTABLE_INT8) && (column_data.type != BINTABLE_UINT8) && (column_data.type != BINTABLE_UTF8)) {
+        #if USE_LITTLE_ENDIAN
+            descr->byteorder = '<'; 
+        #else
+            descr->byteorder = '>';
+        #endif
     }
 
     if (column_data.type==BINTABLE_UTF32 || column_data.type==BINTABLE_UTF8) {

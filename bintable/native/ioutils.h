@@ -52,7 +52,7 @@ class BufferedInputStream
     void read_primitive(T &val)
     {
         read(reinterpret_cast<char *>(&val), sizeof(val));
-        #if !LITTLE_ENDIAN
+        #if !(USE_LITTLE_ENDIAN == SYSTEM_IS_LITTLE_ENDIAN)
             _reverse_bits(val);
         #endif
     }
@@ -102,7 +102,7 @@ class BufferedOutputStream
     template <class T>
     void write_primitive(const T &val)
     {
-        #if LITTLE_ENDIAN
+        #if USE_LITTLE_ENDIAN == SYSTEM_IS_LITTLE_ENDIAN
             write(reinterpret_cast<const char *>(&val), sizeof(val));
         #else
             T copy = val;

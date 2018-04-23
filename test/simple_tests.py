@@ -67,7 +67,7 @@ class TestBinaryTable(unittest.TestCase):
         cols = {"COL": np.array(["a", "bc", "de", "124"], dtype='S')}
         cols_new = write_load_table(cols)
         self.assertTrue(arrays_are_equal(
-            cols["COL"], cols_new["COL"]), "Something wrong with unicode")
+            cols["COL"], cols_new["COL"]), "Something wrong with ascii")
 
     def test_df_with_text(self):
         df = pd.DataFrame(

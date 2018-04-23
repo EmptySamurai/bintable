@@ -5,12 +5,12 @@ from collections import namedtuple
 import bintable.native
 
 
-_ENDIANESS = "<"
+_ENDIANESS = "<" if bintable.native.USE_LITTLE_ENDIAN else ">"
 
 
 def _preprocess_column(arr):
     new_dtype = None
-    if arr.dtype.kind != "O":
+    if arr.dtype.kind not in ["O", "S", "b", "B", "?"]:
         new_dtype = arr.dtype.newbyteorder(_ENDIANESS)
     return np.require(arr, dtype=new_dtype, requirements=['A'])
 
