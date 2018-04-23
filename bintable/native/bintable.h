@@ -24,4 +24,7 @@ void write_table(std::vector<BinTableColumnData *> &data, const std::string &pat
 
 void read_table(const std::string &path, std::vector<BinTableColumnData *> &out);
 
+BinTableHeader read_header(const std::string &path);
+
+
 NAMESPACE_END(NAMESPACE_BINTABLE)

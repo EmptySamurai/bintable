@@ -40,6 +40,10 @@ class TestBinaryTable(unittest.TestCase):
         for col in old_df.columns:
             self.assertTrue(arrays_are_equal(old_df[col].values, new_df[col].values), col +" is not correct")
 
+    def setUp(self):
+        print("In method", self._testMethodName)
+
+
     def test_float_numeric(self):
         df = random_numeric_df(10000, 10)
         df_new = write_load_table(df)
@@ -108,6 +112,22 @@ class TestBinaryTable(unittest.TestCase):
             bintable.write_table(df_wrong, filename, append=True)        
 
         os.remove(filename)
+
+    def test_read_header(self):
+        filename = "temp.bt"
+        df = {"COL_STR": np.array(["aacc","bb","ccc"], dtype='U'), "COL_INT": np.array([1,2,3], dtype='int64')}
+        bintable.write_dict(df, filename)
+        header = bintable.read_header(filename)
+        os.remove(filename)
+
+        self.assertEqual(header.n_columns, 2, "Wrong columns size")  
+        self.assertEqual(header.n_rows, 3, "Wrong rows size")  
+        self.assertEqual(header.columns["COL_STR"], "UTF-32", "Wrong column type")  
+        self.assertEqual(header.columns["COL_INT"], "int64", "Wrong column type")    
+  
+  
+  
+
         
 
 if __name__ == '__main__':

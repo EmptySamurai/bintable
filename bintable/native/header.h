@@ -22,29 +22,27 @@ class BinTableColumnDefinition {
 
     BinTableColumnDefinition(const BinTableColumnDefinition& other);
 
-    virtual void write(BufferedOutputStream& stream);
+    void write(BufferedOutputStream& stream) const;
 
-    virtual ~BinTableColumnDefinition();
+    ~BinTableColumnDefinition();
 
     private:
-        bool has_maxlen();
+        bool has_maxlen() const;
     
 };
 
 class BinTableHeader {
     public:
         uint32_t version = CURRENT_VERSION;
-        uint64_t n_rows;
-        uint32_t n_columns;
-        std::vector<BinTableColumnDefinition*>* columns = nullptr;
+        uint64_t n_rows = 0;
+        uint32_t n_columns = 0;
+        std::vector<BinTableColumnDefinition> columns;
 
         BinTableHeader();
         BinTableHeader(const BinTableHeader& other);
 
     explicit BinTableHeader(BufferedInputStream& stream);
-        void write(BufferedOutputStream& stream);
-        void delete_columns();
-        ~BinTableHeader();
+        void write(BufferedOutputStream& stream) const;
  };
 
 NAMESPACE_END(NAMESPACE_BINTABLE)

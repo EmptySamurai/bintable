@@ -34,7 +34,7 @@ BinTableColumnDefinition::BinTableColumnDefinition(const BinTableColumnDefinitio
     }
 }
 
-void BinTableColumnDefinition::write(BufferedOutputStream &stream)
+void BinTableColumnDefinition::write(BufferedOutputStream &stream) const
 {
     stream.write_primitive(type);
     name->write(stream);
@@ -49,7 +49,7 @@ BinTableColumnDefinition::~BinTableColumnDefinition()
     delete name;
 }
 
-bool BinTableColumnDefinition::has_maxlen()
+bool BinTableColumnDefinition::has_maxlen() const
 {
     return (type == BINTABLE_UTF32) || (type == BINTABLE_UTF8);
 }
@@ -60,66 +60,27 @@ BinTableHeader::BinTableHeader(BufferedInputStream &stream)
     stream.read_primitive(n_rows);
     stream.read_primitive(n_columns);
 
-    columns = new std::vector<BinTableColumnDefinition *>();
-    columns->reserve(n_columns);
-    try
+    columns.reserve(n_columns);
+
+    for (uint32_t i = 0; i < n_columns; i++)
     {
-        for (uint32_t i = 0; i < n_columns; i++)
-        {
-            columns->push_back(new BinTableColumnDefinition(stream));
-        }
-    }
-    catch (std::exception ex)
-    {
-        delete_columns();
-        throw ex;
+        columns.emplace_back(stream);
     }
 };
 
 BinTableHeader::BinTableHeader() = default;
 
-BinTableHeader::BinTableHeader(const BinTableHeader &other)
-{
-    PRINT("COPY HEADER");
-    version = other.version;
-    n_rows = other.n_rows;
-    n_columns = other.n_columns;
+BinTableHeader::BinTableHeader(const BinTableHeader &other) = default;
 
-    if (other.columns != nullptr)
-    {
-        columns = new std::vector<BinTableColumnDefinition *>();
-        columns->reserve(n_columns);
-        for (auto col : (*other.columns)) {
-            columns->push_back(new BinTableColumnDefinition(*col));
-        }
-    }
-}
-
-void BinTableHeader::write(BufferedOutputStream &stream)
+void BinTableHeader::write(BufferedOutputStream &stream) const
 {
     stream.write_primitive(version);
     stream.write_primitive(n_rows);
     stream.write_primitive(n_columns);
 
-    for (auto i = 0; i < n_columns; i++)
+    for (auto it = columns.begin(); it!=columns.end(); it++)
     {
-        (*columns)[i]->write(stream);
+        (*it).write(stream);
     }
 };
 
-void BinTableHeader::delete_columns()
-{
-    if (columns != nullptr)
-    {
-        for (auto &column : *columns)
-        {
-            delete column;
-        }
-    }
-    delete columns;
-}
-
-BinTableHeader::~BinTableHeader()
-{
-    delete_columns();
-};

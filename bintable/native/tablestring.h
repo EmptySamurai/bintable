@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include "common.h"
 #include "ioutils.h"
 
@@ -18,6 +19,7 @@ class BinTableString
     explicit BinTableString(BufferedInputStream &stream);
     void write(BufferedOutputStream &stream);
     static void read_to_buffer(BufferedInputStream &stream, char *buffer, uint32_t &size);
+    std::string to_string() const;
     ~BinTableString();
 
     bool operator==(const BinTableString &other);

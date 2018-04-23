@@ -1,5 +1,6 @@
 #include "tablestring.h"
 #include "ioutils.h"
+#include <sstream>
 
 using namespace NAMESPACE_BINTABLE;
 
@@ -34,6 +35,12 @@ void BinTableString::write(BufferedOutputStream& stream) {
     stream.write_primitive(size);
     stream.write(data, size);
 };
+
+std::string BinTableString::to_string() const {
+    std::stringstream stream;
+    stream.write(data, size);
+    return stream.str();
+}
 
 BinTableString::~BinTableString() {
     if (delete_data) {

@@ -49,7 +49,7 @@ void NAMESPACE_BINTABLE::column_data_from_numpy_array(PyArrayObject *arr, BinTab
     out.data = PyArray_BYTES(arr);
     auto type = PyArray_TYPE(arr);
     if (!numpy_to_table_types.count(type)) {
-        UnknownDatatypeException("Unknown NumPy datatype: "+arr->descr->type);
+        throw UnknownDatatypeException("Unknown NumPy datatype: "+arr->descr->type);
     }
     out.type = numpy_to_table_types[PyArray_TYPE(arr)];
 

@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+from collections import namedtuple
 import bintable.native
 
 
@@ -85,3 +86,12 @@ def read_dict(filename):
 
 def read_table(filename):
     return pd.DataFrame(read_dict(filename))
+
+
+_BinTableHeader = namedtuple("BinTableHeader", ['version', 'n_columns', 'n_rows', 'columns'])
+
+def read_header(filename):
+    _check_file_exists(filename)
+    header_dict = bintable.native.read_header(filename)
+    return _BinTableHeader(**header_dict)
+

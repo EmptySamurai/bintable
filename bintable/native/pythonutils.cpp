@@ -1,7 +1,6 @@
-#pragma once
 #include "common.h"
 #include "Python.h"
-#include <numpy/npy_math.h>
+#include  <limits>
 #include "exceptions.h"
 #include "tablestring.h"
 #include "pythonutils.h"
@@ -37,7 +36,7 @@ void python_object_to_table_string(PyObject* obj, BinTableString& out) {
         python_string_to_table_string(obj, out);
     } else if (PyFloat_Check(obj)) {
         double value = PyFloat_AsDouble(obj);
-        if (npy_isnan(value)) {
+        if (std::isnan(value)) {
             _to_null_string(out);
         } else {
             throw WrongPythonObjectException("Object array contains non NaN floats");
@@ -52,7 +51,7 @@ void python_object_to_table_string(PyObject* obj, BinTableString& out) {
 PyObject* table_string_to_python_object(BinTableString& str) {
     const char *errors = NULL;
     if ((str.size == 1) && (str.data[0]==0)) {
-        return PyFloat_FromDouble(NPY_NAN);
+        return PyFloat_FromDouble(std::numeric_limits<double>::quiet_NaN());
     } else {
         return table_string_to_python_string(str);
     }

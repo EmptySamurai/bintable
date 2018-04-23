@@ -4,21 +4,29 @@
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
-
-class StreamFinishedException : public std::exception {
-    using std::exception::exception;
+class BinTableException : public std::exception {
+public:
+    explicit BinTableException(const char * m) : message{m} {}
+    explicit BinTableException(const std::string m) : message{m} {}
+    virtual const char * what() const noexcept override {return message.c_str();}
+private:
+    std::string message = "";
 };
 
-class WrongPythonObjectException : public std::exception {
-    using std::exception::exception;
+class StreamFinishedException : public BinTableException {
+    using BinTableException::BinTableException;
 };
 
-class UnknownDatatypeException : public std::exception {
-    using std::exception::exception;
+class WrongPythonObjectException : public BinTableException {
+    using BinTableException::BinTableException;
 };
 
-class AppendException : public std::exception {
-    using std::exception::exception;
+class UnknownDatatypeException : public BinTableException {
+    using BinTableException::BinTableException;
+};
+
+class AppendException : public BinTableException {
+    using BinTableException::BinTableException;
 };
 
 

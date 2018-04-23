@@ -85,7 +85,7 @@ class BufferedOutputStream
         buffer_size = 0;
     };
 
-    void write(char *data, std::streamsize size)
+    void write(const char *data, std::streamsize size)
     {
         if (buffer_size + size > buffer_max_size)
         {
@@ -100,14 +100,14 @@ class BufferedOutputStream
     };
 
     template <class T>
-    void write_primitive(T &val)
+    void write_primitive(const T &val)
     {
         #if LITTLE_ENDIAN
-            write(reinterpret_cast<char *>(&val), sizeof(val));
+            write(reinterpret_cast<const char *>(&val), sizeof(val));
         #else
             T copy = val;
             _reverse_bits(copy);
-            write(reinterpret_cast<char *>(&copy), sizeof(val));
+            write(reinterpret_cast<const char *>(&copy), sizeof(val));
         #endif
     }
 

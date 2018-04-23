@@ -8,7 +8,6 @@
 #include <pybind11/pybind11.h>
 #include <numpy/arrayobject.h>
 
-
 namespace py = pybind11;
 
 using namespace NAMESPACE_BINTABLE;
@@ -41,7 +40,8 @@ void write_table_interface(const py::dict columns_dict, const std::string &path,
     catch (std::exception ex)
     {
         _delete_columns(columns);
-        if (!append) {
+        if (!append)
+        {
             remove(path.c_str());
         }
         throw ex;
@@ -66,10 +66,31 @@ py::dict read_table_interface(const std::string &path)
     return dict;
 }
 
+py::dict read_header_interface(const std::string &path)
+{
+    BinTableHeader header = read_header(path);
+
+    py::dict dict;
+    dict["version"] = header.version;
+    dict["n_rows"] = header.n_rows;
+    dict["n_columns"] = header.n_columns;
+
+    py::dict cols_dict;
+    for (auto it = header.columns.begin(); it != header.columns.end(); it++)
+    {
+        auto &col = *it;
+        cols_dict[col.name->to_string().c_str()] = DATATYPE_NAME[col.type];
+    }
+    dict["columns"] = cols_dict;
+
+    return dict;
+}
+
 PYBIND11_MODULE(native, m)
 {
     m.doc() = "Bintable native code"; // optional module docstring
 
     m.def("write_table", &write_table_interface, "Function to write table");
     m.def("read_table", &read_table_interface, "Function to read table");
+    m.def("read_header", &read_header_interface, "Function to read header");
 }

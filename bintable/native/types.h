@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <string>
 #include "common.h"
+
 
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
@@ -32,6 +34,9 @@ const tabledatatype BINTABLE_OBJECT = 13;
 
 
 const uint8_t DATATYPE_ELEMENT_SIZE[] = {1,1,1,2,2,4,4,8,8,4,8,1,4, 1};
+const std::string DATATYPE_NAME[] = {"bool", "int8", "uint8", "int16", "uint16" ,
+ "int32", "uint32", "int64", "uint64", "float32", "float64", "UTF-8", "UTF-32", "object"};
+
 
 bool is_basic_bintable_datatype(tabledatatype type);
 
