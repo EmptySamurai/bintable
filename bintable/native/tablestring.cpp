@@ -9,9 +9,7 @@ void BinTableString::read_to_buffer(BufferedInputStream& stream, char* buffer, u
     stream.read(buffer, size);
 }
 
-
-BinTableString::BinTableString(BufferedInputStream& stream) {
-    stream.read_primitive(size);
+void BinTableString::read_data_array(BufferedInputStream& stream) {
     data = new char[size];
     try{
         stream.read(data, size);
@@ -20,6 +18,15 @@ BinTableString::BinTableString(BufferedInputStream& stream) {
         throw ex;
     }
     delete_data = true;
+}
+
+BinTableString::BinTableString(BufferedInputStream& stream) {
+    stream.read_primitive(size);
+    read_data_array(stream);
+};
+
+BinTableString::BinTableString(BufferedInputStream& stream, uint32_t size) : size(size) {
+    read_data_array(stream);
 };
 
 BinTableString::BinTableString(const BinTableString& other) {

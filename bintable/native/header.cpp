@@ -56,6 +56,25 @@ bool BinTableColumnDefinition::has_maxlen() const
 
 BinTableHeader::BinTableHeader(BufferedInputStream &stream)
 {
+    bool header_string_read = true;
+    BinTableString *file_header_string = nullptr;
+    try
+    {
+        file_header_string = new BinTableString(stream, HEADER_STRING.length());
+        header_string_read = file_header_string->to_string() == HEADER_STRING;
+    }
+    catch (BinTableException ex)
+    {
+        header_string_read = false;
+    }
+
+    delete file_header_string;
+
+    if (!header_string_read)
+    {
+        throw NotBinTableException("Can't find bintable header string. Assuming not a bintable");
+    }
+
     stream.read_primitive(version);
     stream.read_primitive(n_rows);
     stream.read_primitive(n_columns);
@@ -74,13 +93,14 @@ BinTableHeader::BinTableHeader(const BinTableHeader &other) = default;
 
 void BinTableHeader::write(BufferedOutputStream &stream) const
 {
+    stream.write(HEADER_STRING.c_str(), HEADER_STRING.length());
+
     stream.write_primitive(version);
     stream.write_primitive(n_rows);
     stream.write_primitive(n_columns);
 
-    for (auto it = columns.begin(); it!=columns.end(); it++)
+    for (auto it = columns.begin(); it != columns.end(); it++)
     {
         (*it).write(stream);
     }
 };
-

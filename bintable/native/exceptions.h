@@ -13,6 +13,11 @@ private:
     std::string message = "";
 };
 
+class NotBinTableException : public BinTableException {
+    using BinTableException::BinTableException;
+};
+
+
 class StreamFinishedException : public BinTableException {
     using BinTableException::BinTableException;
 };

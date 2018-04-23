@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <vector>
+#include <string>
 #include "common.h"
 #include "tablestring.h"
 #include "types.h"
@@ -8,6 +9,7 @@
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
 const uint64_t CURRENT_VERSION = 1;
+const std::string HEADER_STRING= "BINTABLEHEADERSTRING";
 
 class BinTableColumnDefinition { 
     public:

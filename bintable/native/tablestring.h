@@ -17,6 +17,7 @@ class BinTableString
     BinTableString();
     BinTableString(const BinTableString& other);
     explicit BinTableString(BufferedInputStream &stream);
+    BinTableString(BufferedInputStream &stream, uint32_t size);
     void write(BufferedOutputStream &stream);
     static void read_to_buffer(BufferedInputStream &stream, char *buffer, uint32_t &size);
     std::string to_string() const;
@@ -25,6 +26,9 @@ class BinTableString
     bool operator==(const BinTableString &other);
     bool operator!=(const BinTableString &other);
     bool operator<(const BinTableString &other) const;
+
+  private:
+    void read_data_array(BufferedInputStream &stream);
 };
 
 

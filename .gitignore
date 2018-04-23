@@ -2,4 +2,5 @@
 cmake-build-debug/
 .vscode/
 bintable.egg-info/
+__pycache__/
 **.bt
