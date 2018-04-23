@@ -3,9 +3,11 @@ from setuptools import find_packages
 import glob
 import os
 import numpy as np
+import sys
 
 native_path = os.path.join('bintable', 'native')
 native = Extension('bintable.native',
+                    define_macros = [("LITTLE_ENDIAN", sys.byteorder=='little')],
                     include_dirs = ['pybind11/include', native_path, np.get_include()],
                     sources = glob.glob(os.path.join(native_path, "*.cpp")),
                     extra_compile_args=['-std=c++11', '-O3'])

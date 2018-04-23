@@ -66,7 +66,9 @@ PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& c
     
     PyArray_Descr* descr = PyArray_DescrNewFromType(table_to_numpy_types[column_data.type]);
 
-    descr->byteorder = '<'; 
+    if (column_data.type != BINTABLE_OBJECT) {
+        descr->byteorder = '<'; 
+    }
 
     if (column_data.type==BINTABLE_UTF32 || column_data.type==BINTABLE_UTF8) {
         descr->elsize = column_data.maxlen; 

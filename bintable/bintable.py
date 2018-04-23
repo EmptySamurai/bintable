@@ -8,7 +8,10 @@ _ENDIANESS = "<"
 
 
 def _preprocess_column(arr):
-    return np.require(arr, dtype=arr.dtype.newbyteorder(_ENDIANESS), requirements=['A'])
+    new_dtype = None
+    if arr.dtype.kind != "O":
+        new_dtype = arr.dtype.newbyteorder(_ENDIANESS)
+    return np.require(arr, dtype=new_dtype, requirements=['A'])
 
 
 def _preprocess_dict(d):
@@ -49,11 +52,10 @@ def _prepare_file_for_write(filename, append):
         if not os.path.isfile(filename):
             raise IOError("{0} exists and is not file".format(filename))
 
-        if not append:
-            os.remove(filename)
     elif append:
-        raise IOError("{0} doesn't exist. Nothing to append to".format(filename))
-        
+        raise IOError(
+            "{0} doesn't exist. Nothing to append to".format(filename))
+
 
 def _write_table_wrapper(columns_dict, filename, append):
     columns_dict = _preprocess_dict(columns_dict)

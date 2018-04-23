@@ -2,9 +2,15 @@
 #include "common.h"
 #include <istream>
 #include <iostream>
+#include <algorithm>
 #include "exceptions.h"
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
+
+template<class T> 
+inline void _reverse_bits(T& val) {
+    std::reverse(reinterpret_cast<char *>(&val), reinterpret_cast<char *>(&val) + sizeof(val));
+}
 
 class BufferedInputStream
 {
@@ -46,6 +52,9 @@ class BufferedInputStream
     void read_primitive(T &val)
     {
         read(reinterpret_cast<char *>(&val), sizeof(val));
+        #if !LITTLE_ENDIAN
+            _reverse_bits(val);
+        #endif
     }
     ~BufferedInputStream() {
         delete[] buffer;
@@ -93,7 +102,13 @@ class BufferedOutputStream
     template <class T>
     void write_primitive(T &val)
     {
-        write(reinterpret_cast<char *>(&val), sizeof(val));
+        #if LITTLE_ENDIAN
+            write(reinterpret_cast<char *>(&val), sizeof(val));
+        #else
+            T copy = val;
+            _reverse_bits(copy);
+            write(reinterpret_cast<char *>(&copy), sizeof(val));
+        #endif
     }
 
     ~BufferedOutputStream() {
@@ -107,18 +122,5 @@ class BufferedOutputStream
     char *buffer;
     std::streamsize buffer_size;
 };
-
-// int truncate(int fd, long size)
-// {
-// #ifdef _WIN32 || _WIN64 
-//     return _chsize(fd, size);
-// #else
-//   #ifdef POSIX
-//     return ftruncate(fd, size);
-//   #else
-//     // code for other OSes
-//   #endif
-// #endif
-// }
 
 NAMESPACE_END(NAMESPACE_BINTABLE)

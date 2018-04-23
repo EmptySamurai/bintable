@@ -88,6 +88,26 @@ class TestBinaryTable(unittest.TestCase):
 
         os.remove(filename)
         self._compare_dfs(pd.concat([df,df]), df_new)
+
+    def test_append_wrong_column_name(self):
+        filename = "temp_append.bt"
+        df = pd.DataFrame({"COL": ["aacc","bb","ccc"]})
+        df_wrong = pd.DataFrame({"COL1": ["aacc","bb","ccc"]})
+        bintable.write_table(df, filename)
+        with self.assertRaises(Exception):
+            bintable.write_table(df_wrong, filename, append=True)        
+
+        os.remove(filename)
+
+    def test_append_wrong_column_dtype(self):
+        filename = "temp_append.bt"
+        df = pd.DataFrame({"COL": ["aacc","bb","ccc"]})
+        df_wrong = pd.DataFrame({"COL": [1,2,3]})
+        bintable.write_table(df, filename)
+        with self.assertRaises(Exception):
+            bintable.write_table(df_wrong, filename, append=True)        
+
+        os.remove(filename)
         
 
 if __name__ == '__main__':
