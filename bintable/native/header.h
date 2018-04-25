@@ -4,6 +4,7 @@
 #include <string>
 #include "common.h"
 #include "tablestring.h"
+#include "streams/streams.h"
 #include "types.h"
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
@@ -20,11 +21,11 @@ class BinTableColumnDefinition {
         
         BinTableColumnDefinition();
 
-    explicit BinTableColumnDefinition(BufferedInputStream& stream);
+    explicit BinTableColumnDefinition(InputStream& stream);
 
     BinTableColumnDefinition(const BinTableColumnDefinition& other);
 
-    void write(BufferedOutputStream& stream) const;
+    void write(OutputStream& stream) const;
 
     ~BinTableColumnDefinition();
 
@@ -43,8 +44,8 @@ class BinTableHeader {
         BinTableHeader();
         BinTableHeader(const BinTableHeader& other);
 
-    explicit BinTableHeader(BufferedInputStream& stream);
-        void write(BufferedOutputStream& stream) const;
+    explicit BinTableHeader(InputStream& stream);
+        void write(OutputStream& stream) const;
  };
 
 NAMESPACE_END(NAMESPACE_BINTABLE)

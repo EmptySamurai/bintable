@@ -1,15 +1,20 @@
 #include "tablestring.h"
-#include "ioutils.h"
+#include "streams/streams.h"
 #include <sstream>
 
 using namespace NAMESPACE_BINTABLE;
 
-void BinTableString::read_to_buffer(BufferedInputStream& stream, char* buffer, uint32_t& size) {
-    stream.read_primitive(size);
+void BinTableString::read_to_buffer(InputStream& stream, char* buffer, uint32_t& size) {
+    stream.read_primitive_endian_aware(size);
     stream.read(buffer, size);
 }
 
-void BinTableString::read_data_array(BufferedInputStream& stream) {
+void BinTableString::read_to_stream(InputStream &input_stream, OutputStream &output_stream, uint32_t &size) {
+    input_stream.read_primitive_endian_aware(size);
+    output_stream.write(input_stream, size);
+}
+
+void BinTableString::read_data_array(InputStream& stream) {
     data = new char[size];
     try{
         stream.read(data, size);
@@ -20,12 +25,12 @@ void BinTableString::read_data_array(BufferedInputStream& stream) {
     delete_data = true;
 }
 
-BinTableString::BinTableString(BufferedInputStream& stream) {
-    stream.read_primitive(size);
+BinTableString::BinTableString(InputStream& stream) {
+    stream.read_primitive_endian_aware(size);
     read_data_array(stream);
 };
 
-BinTableString::BinTableString(BufferedInputStream& stream, uint32_t size) : size(size) {
+BinTableString::BinTableString(InputStream& stream, uint32_t size) : size(size) {
     read_data_array(stream);
 };
 
@@ -38,9 +43,14 @@ BinTableString::BinTableString(const BinTableString& other) {
 
 BinTableString::BinTableString() = default;
 
-void BinTableString::write(BufferedOutputStream& stream) {
-    stream.write_primitive(size);
+void BinTableString::write(OutputStream& stream) {
+    stream.write_primitive_endian_aware(size);
     stream.write(data, size);
+};
+
+void BinTableString::skip(InputStream &stream, uint32_t &size) {
+    stream.read_primitive_endian_aware(size);
+    stream.skip(size);
 };
 
 std::string BinTableString::to_string() const {

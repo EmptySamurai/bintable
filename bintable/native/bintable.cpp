@@ -1,12 +1,19 @@
 #include "bintable.h"
 #include "pythonutils.h"
 
-#include "ioutils.h"
+#include "streams/streams.h"
+#include "streams/bufferedstreams.h"
+#include "streams/memorystreams.h"
+
+
+#include "writer.h"
+
 #include "Python.h"
 #include <ostream>
 #include <fstream>
 #include <functional>
 #include <map>
+#include <vector>
 #include <algorithm>
 #include <sstream>
 #include <chrono>
@@ -115,42 +122,8 @@ BinTableHeader _validate_and_get_header(std::vector<BinTableColumnData *> &data,
     return old_header;
 }
 
-inline void _write_row_fixed_length_string(BufferedOutputStream &stream, char *data, uint64_t &index, uint8_t size, uint32_t maxlen)
-{
-    char *data_start = data + index * maxlen;
-    char *data_end = data_start + maxlen;
-    uint32_t len = maxlen;
-    for (uint32_t i = 0; i < maxlen; i += size)
-    {
-        char notNull = 0;
-        for (uint8_t j = 1; j <= size; j++)
-        {
-            notNull = notNull || data_end[-j];
-        }
-        if (notNull)
-        {
-            break;
-        }
-        else
-        {
-            len -= size;
-            data_end -= size;
-        }
-    }
-    BinTableString temp_string;
-    temp_string.data = data_start;
-    temp_string.size = len;
-    temp_string.write(stream);
-}
 
-inline void _write_row_object(BufferedOutputStream &stream, PyObject **data, uint64_t &index)
-{
-    BinTableString temp_string;
-    python_object_to_table_string(data[index], temp_string);
-    temp_string.write(stream);
-}
-
-void _write_rows_block(std::vector<BinTableColumnData *> &data, BufferedOutputStream &stream)
+void _write_rows_block(std::vector<BinTableColumnData *> &data, OutputStream &stream)
 {
     uint32_t n_columns = data.size();
     uint64_t n_rows = 0;
@@ -159,35 +132,50 @@ void _write_rows_block(std::vector<BinTableColumnData *> &data, BufferedOutputSt
         n_rows = data[0]->size;
     };
 
-    stream.write_primitive(n_rows);
+    FromPythonOperationsSelector selector;
+    Writer writer(&selector);
+    std::vector<ReadWriteSpecification> cols_specifications;
+
+    stream.write_primitive_endian_aware(n_rows);
 
     for (uint32_t i = 0; i < n_columns; i++)
     {
         auto column = data[i];
-        auto data_array = data[i]->data;
 
         auto size = DATATYPE_ELEMENT_SIZE[column->type];
 
+        ReadWriteSpecification spec;
+        spec.output_stream = &stream;
+        spec.type = column->type;
+        spec.maxlen = column->maxlen;
+        uint64_t array_length;
+        
         if (is_basic_bintable_datatype(column->type))
         {
-            stream.write(data_array, size * n_rows);
+            array_length = size * n_rows;
         }
         else if (column->type == BINTABLE_UTF32 || column->type == BINTABLE_UTF8)
         {
-            auto maxlen = column->maxlen;
-            for (uint64_t i = 0; i < n_rows; i++)
-            {
-                _write_row_fixed_length_string(stream, data_array, i, size, maxlen);
-            }
+            array_length = column->maxlen * n_rows;
         }
         else if (column->type == BINTABLE_OBJECT)
         {
-            PyObject **objects_array = reinterpret_cast<PyObject **>(data_array);
-            for (uint64_t i = 0; i < n_rows; i++)
-            {
-                _write_row_object(stream, objects_array, i);
-            }
+            array_length = n_rows * sizeof(PyObject *);
         }
+
+        spec.input_stream = new MemoryInputStream(column->data, array_length);
+
+        cols_specifications.push_back(spec);
+
+        writer.loop(n_rows).write(spec);
+    }
+
+    PRINT("START RUN");
+    writer.run();
+    PRINT("FINISHED RUN");
+
+    for (auto spec : cols_specifications) {
+        delete spec.input_stream; 
     }
 }
 
@@ -227,99 +215,85 @@ void NAMESPACE_BINTABLE::write_table(std::vector<BinTableColumnData *> &data, co
 }
 
 
-inline void _read_row_fixed_string(BufferedInputStream &stream, char *data, const uint64_t &index, uint32_t maxlen)
-{
-    uint32_t size = 0;
-    BinTableString::read_to_buffer(stream, data + maxlen * index, size);
-}
-
-inline void _read_row_object(BufferedInputStream &stream, PyObject **data, const uint64_t &index)
-{
-    BinTableString table_string(stream);
-    data[index] = table_string_to_python_object(table_string);
-}
-
-void _read_rows(BinTableHeader &header, BufferedInputStream &stream, std::vector<BinTableColumnData *> &out)
+void _read_rows(BinTableHeader &header, InputStream &stream, std::vector<BinTableColumnData *> &out)
 {
 
     auto n_columns = header.n_columns;
     auto n_rows = header.n_rows;
 
+    
+    std::vector<ReadWriteSpecification> cols_specifications;
+
     for (uint32_t i = 0; i < n_columns; i++)
     {
         BinTableColumnDefinition &column_header = header.columns[i];
-        auto column_data = new BinTableColumnData();
-
         auto type = column_header.type;
+        auto maxlen = column_header.maxlen;
+
+        auto column_data = new BinTableColumnData();
         column_data->type = type;
         column_data->name = new BinTableString(*(column_header.name));
         column_data->size = header.n_rows;
-        auto maxlen = column_header.maxlen;
         column_data->maxlen = maxlen;
 
-        auto size = DATATYPE_ELEMENT_SIZE[column_header.type];
+        ReadWriteSpecification spec;
+        spec.type = type;
+        spec.maxlen = maxlen;
+        spec.input_stream = &stream;
 
-        char *data_array=nullptr;
+
+
+        auto size = DATATYPE_ELEMENT_SIZE[column_header.type];
+        uint64_t array_size;
+
+
         if (is_basic_bintable_datatype(column_header.type))
         {
-            data_array = new char[n_rows * size];
+            array_size = n_rows * size;
         }
         else if (column_header.type == BINTABLE_UTF32 || column_header.type == BINTABLE_UTF8)
         {
-            auto data_array_size = n_rows * maxlen;
-            data_array = new char[data_array_size];
-            std::fill(data_array, data_array + data_array_size, 0);
+            array_size = n_rows * maxlen;
         }
         else if (column_header.type == BINTABLE_OBJECT)
         {
-            PyObject **objects_array = new PyObject *[n_rows];
-            data_array = reinterpret_cast<char *>(objects_array);
+            array_size = n_rows*sizeof(PyObject *);
         }
+
+        char *data_array= new char[array_size];
 
         column_data->data = data_array;
         out.push_back(column_data);
+
+        spec.output_stream = new MemoryOutputStream(data_array, array_size);
+        cols_specifications.push_back(spec);
     }
 
     uint64_t start_block_index = 0;
     while (start_block_index < n_rows)
     {
         uint64_t n_block_rows = 0;
-        stream.read_primitive(n_block_rows);
+        stream.read_primitive_endian_aware(n_block_rows);
 
         if (n_block_rows + start_block_index > n_rows)
         {
             throw BinTableException("Too many blocks");
         }
 
+        ToPythonOperationsSelector selector;
+        Writer writer(&selector);
 
-        for (auto it = out.begin(); it != out.end(); it++)
+
+        for (auto spec : cols_specifications)
         {
-            auto col = *it;
-            auto data_array = col->data;
-            auto size = DATATYPE_ELEMENT_SIZE[col->type];
-
-            if (is_basic_bintable_datatype(col->type))
-            {
-                stream.read(data_array + start_block_index * size, size * n_block_rows);
-            }
-            else if (col->type == BINTABLE_UTF32 || col->type == BINTABLE_UTF8)
-            {
-                for (uint64_t i = 0; i < n_block_rows; i++)
-                {
-                    _read_row_fixed_string(stream, data_array, i + start_block_index, col->maxlen);
-                }
-            }
-            else if (col->type == BINTABLE_OBJECT)
-            {
-                PyObject **objects_array = reinterpret_cast<PyObject **>(data_array);
-                for (uint64_t i = 0; i < n_block_rows; i++)
-                {
-                    _read_row_object(stream, objects_array, i + start_block_index);
-                }
-            }
+            writer.loop(n_block_rows).write(spec);
         }
 
-        start_block_index += n_block_rows; 
+        writer.run();
+    }
+
+    for (auto spec : cols_specifications) {
+        delete spec.output_stream; 
     }
 }
 

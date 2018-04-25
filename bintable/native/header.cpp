@@ -1,12 +1,12 @@
 #include "header.h"
-#include "ioutils.h"
+#include "streams/streams.h"
 #include "exceptions.h"
 
 using namespace NAMESPACE_BINTABLE;
 
-BinTableColumnDefinition::BinTableColumnDefinition(BufferedInputStream &stream)
+BinTableColumnDefinition::BinTableColumnDefinition(InputStream &stream)
 {
-    stream.read_primitive(type);
+    stream.read_primitive_endian_aware(type);
     if (!is_valid_datatype(type))
     {
         throw UnknownDatatypeException("Unknown datatype");
@@ -14,7 +14,7 @@ BinTableColumnDefinition::BinTableColumnDefinition(BufferedInputStream &stream)
     name = new BinTableString(stream);
     if (has_maxlen())
     {
-        stream.read_primitive(maxlen);
+        stream.read_primitive_endian_aware(maxlen);
     }
     else
     {
@@ -34,13 +34,13 @@ BinTableColumnDefinition::BinTableColumnDefinition(const BinTableColumnDefinitio
     }
 }
 
-void BinTableColumnDefinition::write(BufferedOutputStream &stream) const
+void BinTableColumnDefinition::write(OutputStream &stream) const
 {
-    stream.write_primitive(type);
+    stream.write_primitive_endian_aware(type);
     name->write(stream);
     if (has_maxlen())
     {
-        stream.write_primitive(maxlen);
+        stream.write_primitive_endian_aware(maxlen);
     }
 };
 
@@ -54,7 +54,7 @@ bool BinTableColumnDefinition::has_maxlen() const
     return (type == BINTABLE_UTF32) || (type == BINTABLE_UTF8);
 }
 
-BinTableHeader::BinTableHeader(BufferedInputStream &stream)
+BinTableHeader::BinTableHeader(InputStream &stream)
 {
     bool header_string_read = true;
     BinTableString *file_header_string = nullptr;
@@ -75,9 +75,9 @@ BinTableHeader::BinTableHeader(BufferedInputStream &stream)
         throw NotBinTableException("Can't find bintable header string. Assuming not a bintable");
     }
 
-    stream.read_primitive(version);
-    stream.read_primitive(n_rows);
-    stream.read_primitive(n_columns);
+    stream.read_primitive_endian_aware(version);
+    stream.read_primitive_endian_aware(n_rows);
+    stream.read_primitive_endian_aware(n_columns);
 
     columns.reserve(n_columns);
 
@@ -91,13 +91,13 @@ BinTableHeader::BinTableHeader() = default;
 
 BinTableHeader::BinTableHeader(const BinTableHeader &other) = default;
 
-void BinTableHeader::write(BufferedOutputStream &stream) const
+void BinTableHeader::write(OutputStream &stream) const
 {
     stream.write(HEADER_STRING.c_str(), HEADER_STRING.length());
 
-    stream.write_primitive(version);
-    stream.write_primitive(n_rows);
-    stream.write_primitive(n_columns);
+    stream.write_primitive_endian_aware(version);
+    stream.write_primitive_endian_aware(n_rows);
+    stream.write_primitive_endian_aware(n_columns);
 
     for (auto it = columns.begin(); it != columns.end(); it++)
     {
