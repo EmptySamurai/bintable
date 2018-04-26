@@ -288,6 +288,8 @@ void _read_rows(BinTableHeader &header, InputStream &stream, std::vector<BinTabl
         }
 
         writer.run();
+
+        start_block_index+=n_block_rows;        
     }
 
     for (auto spec : cols_specifications) {
@@ -325,7 +327,7 @@ void NAMESPACE_BINTABLE::read_table(const std::string &path, std::vector<BinTabl
             delete col;
         }
 
-        throw ex;
+        throw;
     }
 
     end = std::chrono::steady_clock::now();

@@ -2,6 +2,7 @@
 #include "bintable.h"
 #include "pythonutils.h"
 #include "numpy.h"
+#include "exceptions.h"
 #include <vector>
 #include <string>
 #include <cstdio>
@@ -44,7 +45,7 @@ void write_table_interface(const py::dict columns_dict, const std::string &path,
         {
             remove(path.c_str());
         }
-        throw ex;
+        throw;
     }
     _delete_columns(columns);
 }
@@ -89,10 +90,11 @@ py::dict read_header_interface(const std::string &path)
 PYBIND11_MODULE(native, m)
 {
     m.doc() = "Bintable native code"; // optional module docstring
-
-
+    
     m.attr("USE_LITTLE_ENDIAN") = py::int_(USE_LITTLE_ENDIAN);
     m.def("write_table", &write_table_interface, "Function to write table");
     m.def("read_table", &read_table_interface, "Function to read table");
     m.def("read_header", &read_header_interface, "Function to read header");
+
+    py::register_exception<BinTableException>(m, "BinTableException");
 }

@@ -20,7 +20,7 @@ void BinTableString::read_data_array(InputStream& stream) {
         stream.read(data, size);
     } catch (std::exception ex) {
         delete[] data;
-        throw ex;
+        throw;
     }
     delete_data = true;
 }

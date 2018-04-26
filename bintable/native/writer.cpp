@@ -2,78 +2,92 @@
 #include "writer.h"
 #include "operations/tableoperations.h"
 #include "Python.h"
+#include "exceptions.h"
+
 
 
 using namespace NAMESPACE_BINTABLE;
 
 BaseOperation* FromPythonOperationsSelector::select_write_operation(ReadWriteSpecification& spec) {
+    ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto op = new RawWriteOperation();
-        op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        return op;
+        auto raw_op = new RawWriteOperation();
+        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
+        op = raw_op;
     } else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8) {
-        auto op = new FromFixedLengthStringWriteOperation();
-        op->size = DATATYPE_ELEMENT_SIZE[spec.type];
-        op->maxlen = spec.maxlen;
-        return op;
+        auto fixed_op = new FromFixedLengthStringWriteOperation();
+        fixed_op->size = DATATYPE_ELEMENT_SIZE[spec.type];
+        fixed_op->maxlen = spec.maxlen;
+        op = fixed_op;
     } else if (spec.type == BINTABLE_OBJECT) {
-        auto op = new FromPyObjectWriteOperation();
-        return op;
+        op = new FromPyObjectWriteOperation();
     }
-    return nullptr;
+    op->input_stream = spec.input_stream;
+    op->output_stream = spec.output_stream;
+
+    return op;
 }
 
 BaseOperation* FromPythonOperationsSelector::select_skip_operation(ReadWriteSpecification& spec) {
+    ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto op = new RawSkipOperation();
-        op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        return op;
+        auto raw_op = new RawSkipOperation();
+        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
+        op = raw_op;
     } else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8) {
-        auto op = new RawSkipOperation();
-        op->n_bytes = spec.maxlen;
-        return op;
+        auto raw_op = new RawSkipOperation();
+        raw_op->n_bytes = spec.maxlen;
+        op = raw_op;
     } else if (spec.type == BINTABLE_OBJECT) {
-        auto op = new RawSkipOperation();
-        op->n_bytes = sizeof(PyObject*);
-        return op;
+        auto raw_op = new RawSkipOperation();
+        raw_op->n_bytes = sizeof(PyObject*);
+        op = raw_op;
     }
-    return nullptr;
+    op->input_stream = spec.input_stream;
+    op->output_stream = spec.output_stream;
+
+    return op;
 }
 
 BaseOperation* ToPythonOperationsSelector::select_write_operation(ReadWriteSpecification& spec) {
+    ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto op = new RawWriteOperation();
-        op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        return op;
+        auto raw_op = new RawWriteOperation();
+        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
+        op = raw_op;
     } else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8) {
-        auto op = new ToFixedLengthStringWriteOperation();
-        op->size = DATATYPE_ELEMENT_SIZE[spec.type];
-        op->maxlen = spec.maxlen;
-        return op;
+        auto fixed_op = new ToFixedLengthStringWriteOperation();
+        fixed_op->size = DATATYPE_ELEMENT_SIZE[spec.type];
+        fixed_op->maxlen = spec.maxlen;
+        op = fixed_op;
     } else if (spec.type == BINTABLE_OBJECT) {
-        auto op = new ToPyObjectWriteOperation();
-        return op;
+        op = new ToPyObjectWriteOperation();
     }
-    return nullptr;
+    op->input_stream = spec.input_stream;
+    op->output_stream = spec.output_stream;
+
+    return op;
 }
 
 BaseOperation* ToPythonOperationsSelector::select_skip_operation(ReadWriteSpecification& spec) {
+    ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto op = new RawSkipOperation();
-        op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        return op;
+        auto raw_op = new RawSkipOperation();
+        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
+        op = raw_op;
     } else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8) {
-        auto op = new BinTableStringSkipOperation();
-        return op;
+        op = new BinTableStringSkipOperation();
     } else if (spec.type == BINTABLE_OBJECT) {
-        auto op = new BinTableStringSkipOperation();
-        return op;
+        op = new BinTableStringSkipOperation();
     }
-    return nullptr;
+    op->input_stream = spec.input_stream;
+    op->output_stream = spec.output_stream;
+
+    return op;
 }
 
 BaseOperation* Optimizer::optimize(BaseOperation * operation) {
@@ -187,13 +201,30 @@ Writer Writer::loop(uint64_t n_iter) {
     return loop_writer;
 }
 
+void print_op_tree(BaseOperation* operation, std::string prefix = "") {
+    if (operation->operation_type == "SEQUENCE") {
+        auto seq_operation = reinterpret_cast<SequenceOperation*>(operation);
+        PRINT(prefix<<seq_operation->operation_type);
+        for (auto op : seq_operation->operations) {
+            print_op_tree(op, "\t"+prefix);
+        }
+    } else if (operation->operation_type == "LOOP") {
+        auto loop_operation = reinterpret_cast<LoopOperation*>(operation);
+        PRINT(prefix<<loop_operation->operation_type<<" "<<loop_operation->n_iter<<"x");
+        print_op_tree(loop_operation->operation,"\t"+prefix);
+    } else {
+        PRINT(prefix<<operation->operation_type);
+    }
+}
+
 void Writer::run() {
     if (responsible_for_sequence) {
         Optimizer optimizer;
         sequence = optimizer.optimize(sequence);
+        print_op_tree(sequence);
         (*sequence)();
     } else {
-        //TODO: throw exception
+        throw BinTableException("Running non root writers is not permitted");
     }
 }
 
