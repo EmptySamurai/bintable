@@ -3,6 +3,18 @@
 
 using namespace NAMESPACE_BINTABLE;
 
+// NOOP
+
+NoOperation::NoOperation()
+{
+    operation_type = "NOOP";
+}
+
+void NoOperation::operator()()
+{
+    
+}
+
 // COLLECTION OPERATION
 
 SequenceOperation::SequenceOperation()

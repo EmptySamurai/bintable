@@ -14,6 +14,14 @@ class BaseOperation
     virtual ~BaseOperation() = default;
 };
 
+class NoOperation : public BaseOperation
+{
+  public:
+    NoOperation();
+    void operator()() override;
+};
+
+
 class SequenceOperation : public BaseOperation
 {
   public:

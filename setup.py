@@ -5,7 +5,7 @@ import os
 import numpy as np
 import sys
 
-USE_LITTLE_ENDIAN = 0
+USE_LITTLE_ENDIAN = 1
 
 def collect_cpp(path):
     for root, dirs, files in os.walk(path):
