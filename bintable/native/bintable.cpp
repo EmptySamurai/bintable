@@ -170,9 +170,7 @@ void _write_rows_block(std::vector<BinTableColumnData *> &data, OutputStream &st
         writer.loop(n_rows).write(spec);
     }
 
-    PRINT("START RUN");
     writer.run();
-    PRINT("FINISHED RUN");
 
     for (auto spec : cols_specifications) {
         delete spec.input_stream; 

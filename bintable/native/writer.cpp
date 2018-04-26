@@ -137,6 +137,7 @@ BaseOperation* Optimizer::optimize_sequence(SequenceOperation* sequence) {
 
 
 BaseOperation* Optimizer::optimize_loop(LoopOperation* loop) {
+    loop->operation = optimize(loop->operation);
     if ((loop->operation->operation_type == "RAW_SKIP") || (loop->operation->operation_type == "RAW_WRITE")) {
         auto op_in_loop = reinterpret_cast<RawOperation*>(loop->operation);
         op_in_loop->n_bytes *= loop->n_iter;
@@ -198,7 +199,6 @@ void Writer::run() {
 
 Writer::~Writer() {
     if (responsible_for_sequence) {
-        PRINT("DELEING SEQUENCE");
         delete sequence;
     }
 }
