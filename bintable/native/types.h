@@ -42,6 +42,8 @@ bool is_basic_bintable_datatype(tabledatatype type);
 
 bool is_valid_datatype(tabledatatype type);
 
+void validate_datatype(tabledatatype type);
+
 
 NAMESPACE_END(NAMESPACE_BINTABLE)
 

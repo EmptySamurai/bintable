@@ -142,6 +142,8 @@ void _write_rows_block(std::vector<BinTableColumnData *> &data, OutputStream &st
     {
         auto column = data[i];
 
+        validate_datatype(column->type);
+
         auto size = DATATYPE_ELEMENT_SIZE[column->type];
 
         ReadWriteSpecification spec;
@@ -227,6 +229,8 @@ void _read_rows(BinTableHeader &header, InputStream &stream, std::vector<BinTabl
         BinTableColumnDefinition &column_header = header.columns[i];
         auto type = column_header.type;
         auto maxlen = column_header.maxlen;
+
+        validate_datatype(type);
 
         auto column_data = new BinTableColumnData();
         column_data->type = type;

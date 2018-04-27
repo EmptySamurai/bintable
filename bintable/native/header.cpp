@@ -7,10 +7,8 @@ using namespace NAMESPACE_BINTABLE;
 BinTableColumnDefinition::BinTableColumnDefinition(InputStream &stream)
 {
     stream.read_primitive_endian_aware(type);
-    if (!is_valid_datatype(type))
-    {
-        throw UnknownDatatypeException("Unknown datatype");
-    }
+    validate_datatype(type);
+
     name = new BinTableString(stream);
     if (has_maxlen())
     {
@@ -63,7 +61,7 @@ BinTableHeader::BinTableHeader(InputStream &stream)
         file_header_string = new BinTableString(stream, HEADER_STRING.length());
         header_string_read = file_header_string->to_string() == HEADER_STRING;
     }
-    catch (BinTableException ex)
+    catch (const BinTableException& ex)
     {
         header_string_read = false;
     }

@@ -38,7 +38,7 @@ void write_table_interface(const py::dict columns_dict, const std::string &path,
         }
         write_table(columns, path, append);
     }
-    catch (std::exception ex)
+    catch (const std::exception& ex)
     {
         _delete_columns(columns);
         if (!append)

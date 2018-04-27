@@ -18,7 +18,7 @@ void BinTableString::read_data_array(InputStream& stream) {
     data = new char[size];
     try{
         stream.read(data, size);
-    } catch (std::exception ex) {
+    } catch (const std::exception& ex) {
         delete[] data;
         throw;
     }

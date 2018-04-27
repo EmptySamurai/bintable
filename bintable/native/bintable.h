@@ -14,8 +14,8 @@ struct BinTableColumnData
     //In symbols
     uint64_t size;
     tabledatatype type;
-    char *data;
-    BinTableString *name;
+    char *data = nullptr;
+    BinTableString *name = nullptr;
     //In bytes
     uint32_t maxlen;
 };

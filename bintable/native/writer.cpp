@@ -8,7 +8,9 @@ using namespace NAMESPACE_BINTABLE;
 
 BaseOperation *FromPythonOperationsSelector::select_write_operation(ReadWriteSpecification &spec)
 {
-    ReadWriteOperation *op;
+    validate_datatype(spec.type);
+
+    ReadWriteOperation *op=nullptr;
     if (is_basic_bintable_datatype(spec.type))
     {
         op = new RawWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type]);
@@ -21,6 +23,7 @@ BaseOperation *FromPythonOperationsSelector::select_write_operation(ReadWriteSpe
     {
         op = new FromPyObjectWriteOperation();
     }
+
     op->input_stream = spec.input_stream;
     op->output_stream = spec.output_stream;
 
@@ -29,7 +32,9 @@ BaseOperation *FromPythonOperationsSelector::select_write_operation(ReadWriteSpe
 
 BaseOperation *FromPythonOperationsSelector::select_skip_operation(ReadWriteSpecification &spec)
 {
-    ReadWriteOperation *op;
+    validate_datatype(spec.type);
+
+    ReadWriteOperation * op=nullptr;
     if (is_basic_bintable_datatype(spec.type))
     {
         op = new RawSkipOperation( DATATYPE_ELEMENT_SIZE[spec.type]);
@@ -50,19 +55,22 @@ BaseOperation *FromPythonOperationsSelector::select_skip_operation(ReadWriteSpec
 
 BaseOperation *ToPythonOperationsSelector::select_write_operation(ReadWriteSpecification &spec)
 {
-    ReadWriteOperation *op;
+    validate_datatype(spec.type);
+
+    ReadWriteOperation *op=nullptr;
     if (is_basic_bintable_datatype(spec.type))
     {
         op = new RawWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type]);
     }
     else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8)
     {
-        auto fixed_op = new ToFixedLengthStringWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type], spec.maxlen);
+        op = new ToFixedLengthStringWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type], spec.maxlen);
     }
     else if (spec.type == BINTABLE_OBJECT)
     {
         op = new ToPyObjectWriteOperation();
-    }
+    } 
+
     op->input_stream = spec.input_stream;
     op->output_stream = spec.output_stream;
 
@@ -71,7 +79,9 @@ BaseOperation *ToPythonOperationsSelector::select_write_operation(ReadWriteSpeci
 
 BaseOperation *ToPythonOperationsSelector::select_skip_operation(ReadWriteSpecification &spec)
 {
-    ReadWriteOperation *op;
+    validate_datatype(spec.type);
+
+    ReadWriteOperation *op=nullptr;
     if (is_basic_bintable_datatype(spec.type))
     {
         op = new RawSkipOperation(DATATYPE_ELEMENT_SIZE[spec.type]);
@@ -84,6 +94,7 @@ BaseOperation *ToPythonOperationsSelector::select_skip_operation(ReadWriteSpecif
     {
         op = new BinTableStringSkipOperation();
     }
+    
     op->input_stream = spec.input_stream;
     op->output_stream = spec.output_stream;
 
@@ -107,8 +118,6 @@ BaseOperation *Optimizer::optimize(BaseOperation *operation)
 BaseOperation *Optimizer::optimize_sequence(SequenceOperation *sequence)
 {
     auto &ops = sequence->operations;
-
-    auto n_ops = ops.size();
 
     // Optimize each operation
     for (auto i = 0; i < ops.size(); i++)
