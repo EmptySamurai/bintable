@@ -61,8 +61,7 @@ void NAMESPACE_BINTABLE::column_data_from_numpy_array(PyArrayObject *arr, BinTab
 }
 
 PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& column_data) {
-    npy_intp* dims = new npy_intp[1];
-    dims[0] = column_data.size;
+    npy_intp dims[] = {column_data.size};
     
     PyArray_Descr* descr = PyArray_DescrNewFromType(table_to_numpy_types[column_data.type]);
 
@@ -80,8 +79,6 @@ PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& c
     };
 
     PyObject* result =  PyArray_NewFromDescr( &PyArray_Type, descr, 1, dims, NULL, column_data.data, NPY_ARRAY_CARRAY, NULL);
-
-    delete[] dims;
 
     return result;
 }
