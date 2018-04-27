@@ -60,8 +60,9 @@ LoopOperation::~LoopOperation()
 
 //RAW SKIP OPERATION
 
-RawSkipOperation::RawSkipOperation()
+RawSkipOperation::RawSkipOperation(uint64_t n_bytes)
 {
+    this->n_bytes = n_bytes;
     operation_type = "RAW_SKIP";
 }
 
@@ -72,8 +73,9 @@ void RawSkipOperation::operator()()
 
 //RAW WRITE OPERAION
 
-RawWriteOperation::RawWriteOperation()
+RawWriteOperation::RawWriteOperation(uint64_t n_bytes)
 {
+    this->n_bytes = n_bytes;
     operation_type = "RAW_WRITE";
 }
 

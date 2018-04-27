@@ -34,12 +34,17 @@ def write_load_table(d, append=False):
         d, dict) else bintable.read_table
 
     filename = "temp.bt"
+
+    if os.path.isfile(filename):
+            os.remove(filename)
+
     try:
         write_func(d, filename, append=append)
         result = read_func(filename)
         return result
     finally:
-        os.remove(filename)
+        if os.path.isfile(filename):
+            os.remove(filename)
 
 
 class TestBinaryTable(unittest.TestCase):
@@ -140,7 +145,6 @@ class TestBinaryTable(unittest.TestCase):
                          "UTF-32", "Wrong column type")
         self.assertEqual(header.columns["COL_INT"],
                          "int64", "Wrong column type")
-
 
 if __name__ == '__main__':
     unittest.main()

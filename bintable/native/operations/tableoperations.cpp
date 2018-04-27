@@ -16,7 +16,9 @@ void BinTableStringSkipOperation::operator()() {
     BinTableString::skip(*input_stream, size);
 }
 
-FromFixedLengthStringWriteOperation::FromFixedLengthStringWriteOperation() {
+FromFixedLengthStringWriteOperation::FromFixedLengthStringWriteOperation(uint8_t size, uint32_t maxlen) {
+    this->size = size;
+    this->maxlen = maxlen;
     operation_type = "FROM_FIXED_LENGTH_STRING_WRITE";
     buffer = new char[maxlen];
 }
@@ -50,24 +52,20 @@ void FromFixedLengthStringWriteOperation::operator()() {
 }
 
 FromFixedLengthStringWriteOperation::~FromFixedLengthStringWriteOperation() {
-    delete buffer;
+    delete[] buffer;
 }
 
 
-ToFixedLengthStringWriteOperation::ToFixedLengthStringWriteOperation() {
+ToFixedLengthStringWriteOperation::ToFixedLengthStringWriteOperation(uint8_t size, uint32_t maxlen) : zero_stream(ConstantInputStream(0)) {
+    this->size = size;
+    this->maxlen = maxlen;
     operation_type = "FROM_FIXED_LENGTH_STRING_WRITE";
-    fill_buffer = new char[maxlen];
-    std::fill(fill_buffer, fill_buffer+maxlen, 0);
 }
 
 void ToFixedLengthStringWriteOperation::operator()() {
-    uint32_t size;
-    BinTableString::read_to_stream(*input_stream, *output_stream, size);
-    output_stream->write(fill_buffer, maxlen-size);
-}
-
-ToFixedLengthStringWriteOperation::~ToFixedLengthStringWriteOperation() {
-    delete fill_buffer;
+    uint32_t len;
+    BinTableString::read_to_stream(*input_stream, *output_stream, len);
+    output_stream->write(zero_stream, maxlen-len);
 }
 
 

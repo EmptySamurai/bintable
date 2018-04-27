@@ -55,13 +55,13 @@ class RawOperation : public ReadWriteOperation {
 
 class RawSkipOperation : public RawOperation {
     public:
-        RawSkipOperation();
+        RawSkipOperation(uint64_t n_bytes);
         void operator()() override;
 };
 
 class RawWriteOperation : public RawOperation {
     public:
-        RawWriteOperation();
+        RawWriteOperation(uint64_t n_bytes);
         void operator()() override;
 };
 

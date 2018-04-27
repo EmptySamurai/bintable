@@ -81,7 +81,7 @@ PyObject* NAMESPACE_BINTABLE::numpy_array_from_column_data(BinTableColumnData& c
 
     PyObject* result =  PyArray_NewFromDescr( &PyArray_Type, descr, 1, dims, NULL, column_data.data, NPY_ARRAY_CARRAY, NULL);
 
-    delete dims;
+    delete[] dims;
 
     return result;
 }

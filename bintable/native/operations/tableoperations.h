@@ -1,6 +1,7 @@
 #pragma once
 #include "common.h"
 #include "operations/operations.h"
+#include "streams/constantstream.h"
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
@@ -18,7 +19,7 @@ class FixedLengthStringOperation : public ReadWriteOperation {
 
 class FromFixedLengthStringWriteOperation : public FixedLengthStringOperation {
     public:
-        FromFixedLengthStringWriteOperation();
+        FromFixedLengthStringWriteOperation(uint8_t size, uint32_t maxlen);
         void operator()() override;
         ~FromFixedLengthStringWriteOperation() override;
     private:
@@ -29,11 +30,10 @@ class FromFixedLengthStringWriteOperation : public FixedLengthStringOperation {
 
 class ToFixedLengthStringWriteOperation : public FixedLengthStringOperation {
     public:
-        ToFixedLengthStringWriteOperation();
+        ToFixedLengthStringWriteOperation(uint8_t size, uint32_t maxlen);
         void operator()() override;
-        ~ToFixedLengthStringWriteOperation() override;
     private:
-        char* fill_buffer;
+        ConstantInputStream zero_stream;
 };
 
 //To fixed string skip is BinTableString skip

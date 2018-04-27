@@ -11,16 +11,11 @@ BaseOperation *FromPythonOperationsSelector::select_write_operation(ReadWriteSpe
     ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto raw_op = new RawWriteOperation();
-        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        op = raw_op;
+        op = new RawWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type]);
     }
     else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8)
     {
-        auto fixed_op = new FromFixedLengthStringWriteOperation();
-        fixed_op->size = DATATYPE_ELEMENT_SIZE[spec.type];
-        fixed_op->maxlen = spec.maxlen;
-        op = fixed_op;
+        op = new FromFixedLengthStringWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type], spec.maxlen);
     }
     else if (spec.type == BINTABLE_OBJECT)
     {
@@ -37,21 +32,15 @@ BaseOperation *FromPythonOperationsSelector::select_skip_operation(ReadWriteSpec
     ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto raw_op = new RawSkipOperation();
-        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        op = raw_op;
+        op = new RawSkipOperation( DATATYPE_ELEMENT_SIZE[spec.type]);
     }
     else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8)
     {
-        auto raw_op = new RawSkipOperation();
-        raw_op->n_bytes = spec.maxlen;
-        op = raw_op;
+        op = new RawSkipOperation(spec.maxlen);
     }
     else if (spec.type == BINTABLE_OBJECT)
     {
-        auto raw_op = new RawSkipOperation();
-        raw_op->n_bytes = sizeof(PyObject *);
-        op = raw_op;
+        op = new RawSkipOperation(sizeof(PyObject *));
     }
     op->input_stream = spec.input_stream;
     op->output_stream = spec.output_stream;
@@ -64,16 +53,11 @@ BaseOperation *ToPythonOperationsSelector::select_write_operation(ReadWriteSpeci
     ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto raw_op = new RawWriteOperation();
-        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        op = raw_op;
+        op = new RawWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type]);
     }
     else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8)
     {
-        auto fixed_op = new ToFixedLengthStringWriteOperation();
-        fixed_op->size = DATATYPE_ELEMENT_SIZE[spec.type];
-        fixed_op->maxlen = spec.maxlen;
-        op = fixed_op;
+        auto fixed_op = new ToFixedLengthStringWriteOperation(DATATYPE_ELEMENT_SIZE[spec.type], spec.maxlen);
     }
     else if (spec.type == BINTABLE_OBJECT)
     {
@@ -90,9 +74,7 @@ BaseOperation *ToPythonOperationsSelector::select_skip_operation(ReadWriteSpecif
     ReadWriteOperation *op;
     if (is_basic_bintable_datatype(spec.type))
     {
-        auto raw_op = new RawSkipOperation();
-        raw_op->n_bytes = DATATYPE_ELEMENT_SIZE[spec.type];
-        op = raw_op;
+        op = new RawSkipOperation(DATATYPE_ELEMENT_SIZE[spec.type]);
     }
     else if (spec.type == BINTABLE_UTF32 || spec.type == BINTABLE_UTF8)
     {
@@ -264,7 +246,7 @@ BaseOperation *Optimizer::optimize_loop(LoopOperation *loop)
         extract_op = true;
     } 
     // If no iterations, then replace by noop
-    else if (loop->n_iter ==0) {
+    else if (loop->n_iter == 0) {
         delete loop;
         return new NoOperation();
     }
