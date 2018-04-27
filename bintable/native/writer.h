@@ -38,6 +38,7 @@ class Optimizer {
     private:
         BaseOperation* optimize_sequence(SequenceOperation* sequence);
         void delete_noop(std::vector<BaseOperation*>& operations);
+        void insert_subsequences(std::vector<BaseOperation*>& operations);
         void merge_raw(std::vector<BaseOperation*>& operations);
         BaseOperation* optimize_loop(LoopOperation* loop);
 };

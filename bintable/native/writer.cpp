@@ -137,6 +137,9 @@ BaseOperation *Optimizer::optimize_sequence(SequenceOperation *sequence)
     // Delete noops
     delete_noop(ops);
 
+    // Moving operations of subsequences into current sequence
+    insert_subsequences(ops);
+
     // Merge RAW operations
     merge_raw(ops);
 
@@ -179,6 +182,24 @@ void Optimizer::delete_noop(std::vector<BaseOperation *> &ops)
             }
             ops.erase(ops.begin() + i, ops.begin() + j);
             i--;
+        }
+    }
+}
+
+void Optimizer::insert_subsequences(std::vector<BaseOperation *> &ops)
+{
+    for (auto i = 0; i < ops.size(); i++)
+    {
+        if (ops[i]->operation_type == "SEQUENCE")
+        {
+            auto seq_op = reinterpret_cast<SequenceOperation *>(ops[i]);
+            auto seq_size = seq_op->operations.size();
+            ops.erase(ops.begin()+i, ops.begin()+i+1);
+            ops.insert(ops.begin()+i, seq_op->operations.begin(), seq_op->operations.end());
+            i+=seq_size-1;
+
+            seq_op->operations.clear();
+            delete seq_op;
         }
     }
 }
@@ -237,6 +258,15 @@ BaseOperation *Optimizer::optimize_loop(LoopOperation *loop)
     else if (loop->operation->operation_type == "NOOP")
     {
         extract_op = true;
+    }
+    // If 1 iteration - replace by internal op 
+    else if (loop->n_iter == 1) {
+        extract_op = true;
+    } 
+    // If no iterations, then replace by noop
+    else if (loop->n_iter ==0) {
+        delete loop;
+        return new NoOperation();
     }
 
     if (extract_op)
