@@ -294,7 +294,7 @@ Writer::Writer(OperationsSelector *selector) : Writer::Writer(selector, true)
 
 void Writer::add_operation(BaseOperation *operation)
 {
-    reinterpret_cast<SequenceOperation *>(sequence)->operations.push_back(operation);
+    sequence->operations.push_back(operation);
 }
 
 void Writer::write(ReadWriteSpecification &spec)
@@ -346,14 +346,25 @@ void print_op_tree(BaseOperation *operation, std::string prefix = "")
     }
 }
 
-void Writer::run()
+void Writer::run(bool optimize)
 {
     if (responsible_for_sequence)
     {
-        Optimizer optimizer;
-        sequence = optimizer.optimize(sequence);
-        print_op_tree(sequence);
-        (*sequence)();
+        BaseOperation* op_to_run;
+        if (optimize) {
+            Optimizer optimizer;
+            auto optimized_op = optimizer.optimize(sequence);
+
+            sequence = new SequenceOperation();
+            add_operation(optimized_op);
+            
+            op_to_run = optimized_op;
+        } else {
+            op_to_run = sequence; 
+        }
+
+        print_op_tree(op_to_run);
+        (*op_to_run)();
     }
     else
     {

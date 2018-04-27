@@ -49,7 +49,7 @@ class Writer {
         void write(ReadWriteSpecification& spec);
         void skip(ReadWriteSpecification& spec);
         Writer loop(uint64_t n_iter);
-        void run();
+        void run(bool optimize = true);
         ~Writer();
 
     private:
@@ -57,7 +57,7 @@ class Writer {
         void add_operation(BaseOperation* operation);
         OperationsSelector* selector;
         bool responsible_for_sequence;
-        BaseOperation* sequence;
+        SequenceOperation* sequence;
 };
 
 NAMESPACE_END(NAMESPACE_BINTABLE)
