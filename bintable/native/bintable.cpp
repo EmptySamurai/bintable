@@ -5,7 +5,6 @@
 #include "streams/bufferedstreams.h"
 #include "streams/memorystreams.h"
 
-
 #include "writer.h"
 
 #include "Python.h"
@@ -22,6 +21,8 @@
 using namespace NAMESPACE_BINTABLE;
 
 const int BUFFER_SIZE = 100000;
+
+//HEADER ROUTINE
 
 BinTableHeader _create_header(std::vector<BinTableColumnData *> &data)
 {
@@ -54,7 +55,7 @@ BinTableHeader _create_header(std::vector<BinTableColumnData *> &data)
 template <class T>
 struct ptr_less
 {
-    bool operator()(const T* lhs, const T* rhs) const
+    bool operator()(const T *lhs, const T *rhs) const
     {
         return *lhs < *rhs;
     }
@@ -85,7 +86,7 @@ BinTableHeader _validate_and_get_header(std::vector<BinTableColumnData *> &data,
     std::map<BinTableString *, uint32_t, ptr_less<BinTableString>> columns_index;
 
     uint32_t index_for_map = 0;
-    for (uint32_t i=0; i<new_header.n_columns; i++)
+    for (uint32_t i = 0; i < new_header.n_columns; i++)
     {
         auto &col = new_header.columns.data()[i];
         columns_index[col.name] = i;
@@ -122,60 +123,87 @@ BinTableHeader _validate_and_get_header(std::vector<BinTableColumnData *> &data,
     return old_header;
 }
 
+// TABLE READ/WRITE
+
+void _write_column_major(Writer &writer, std::vector<ReadWriteSpecification> &specs, uint64_t n_rows)
+{
+    for (auto spec : specs)
+    {
+        writer.loop(n_rows).write(spec);
+    }
+}
+
+void _write_row_major(Writer &writer, std::vector<ReadWriteSpecification> &specs, uint64_t n_rows)
+{
+    auto loop = writer.loop(n_rows);
+    for (auto spec : specs)
+    {
+        loop.write(spec);
+    }
+}
+
+uint64_t _array_size(tabledatatype datatype, uint64_t n_rows, uint32_t maxlen)
+{
+    validate_datatype(datatype);
+
+    uint64_t array_length;
+    auto size = DATATYPE_ELEMENT_SIZE[datatype];
+
+    if (is_basic_bintable_datatype(datatype))
+    {
+        array_length = size * n_rows;
+    }
+    else if (datatype == BINTABLE_UTF32 || datatype == BINTABLE_UTF8)
+    {
+        array_length = maxlen * n_rows;
+    }
+    else if (datatype == BINTABLE_OBJECT)
+    {
+        array_length = n_rows * sizeof(PyObject *);
+    }
+
+    return array_length;
+}
+
+ReadWriteSpecification _column_data_to_specs(BinTableColumnData &column_data, OutputStream &output)
+{
+    ReadWriteSpecification spec;
+    spec.input_stream = new MemoryInputStream(column_data.data, _array_size(column_data.type, column_data.size, column_data.maxlen));
+    spec.output_stream = &output;
+    spec.type = column_data.type;
+    spec.maxlen = column_data.maxlen;
+    return spec;
+}
+
+ReadWriteSpecification _column_data_to_specs(BinTableColumnData &column_data, InputStream &input)
+{
+    ReadWriteSpecification spec;
+    spec.output_stream = new MemoryOutputStream(column_data.data, _array_size(column_data.type, column_data.size, column_data.maxlen));
+    spec.input_stream = &input;
+    spec.type = column_data.type;
+    spec.maxlen = column_data.maxlen;
+    return spec;
+}
 
 void _write_rows_block(std::vector<BinTableColumnData *> &data, OutputStream &stream)
-{
-    uint32_t n_columns = data.size();
-    uint64_t n_rows = 0;
-    if (n_columns > 0)
-    {
-        n_rows = data[0]->size;
-    };
+{    
+    uint64_t n_rows = (data.size() > 0) ? data[0]->size : 0;
 
-    FromPythonOperationsSelector selector;
-    Writer writer(&selector);
-    std::vector<ReadWriteSpecification> cols_specifications;
+    std::vector<ReadWriteSpecification> specs;
+    for (auto col_data : data) {
+        specs.push_back(_column_data_to_specs(*col_data, stream));
+    }
 
     stream.write_primitive_endian_aware(n_rows);
 
-    for (uint32_t i = 0; i < n_columns; i++)
-    {
-        auto column = data[i];
-
-        validate_datatype(column->type);
-
-        auto size = DATATYPE_ELEMENT_SIZE[column->type];
-
-        ReadWriteSpecification spec;
-        spec.output_stream = &stream;
-        spec.type = column->type;
-        spec.maxlen = column->maxlen;
-        uint64_t array_length;
-        
-        if (is_basic_bintable_datatype(column->type))
-        {
-            array_length = size * n_rows;
-        }
-        else if (column->type == BINTABLE_UTF32 || column->type == BINTABLE_UTF8)
-        {
-            array_length = column->maxlen * n_rows;
-        }
-        else if (column->type == BINTABLE_OBJECT)
-        {
-            array_length = n_rows * sizeof(PyObject *);
-        }
-
-        spec.input_stream = new MemoryInputStream(column->data, array_length);
-
-        cols_specifications.push_back(spec);
-
-        writer.loop(n_rows).write(spec);
-    }
-
+    FromPythonOperationsSelector selector;
+    Writer writer(&selector);
+    _write_column_major(writer, specs, n_rows);
     writer.run();
 
-    for (auto spec : cols_specifications) {
-        delete spec.input_stream; 
+    for (auto spec : specs)
+    {
+        delete spec.input_stream;
     }
 }
 
@@ -214,15 +242,12 @@ void NAMESPACE_BINTABLE::write_table(std::vector<BinTableColumnData *> &data, co
     std::cout << "Writing body = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << std::endl;
 }
 
-
 void _read_rows(BinTableHeader &header, InputStream &stream, std::vector<BinTableColumnData *> &out)
 {
 
     auto n_columns = header.n_columns;
     auto n_rows = header.n_rows;
 
-    
-    std::vector<ReadWriteSpecification> cols_specifications;
 
     for (uint32_t i = 0; i < n_columns; i++)
     {
@@ -230,46 +255,20 @@ void _read_rows(BinTableHeader &header, InputStream &stream, std::vector<BinTabl
         auto type = column_header.type;
         auto maxlen = column_header.maxlen;
 
-        validate_datatype(type);
-
         auto column_data = new BinTableColumnData();
         column_data->type = type;
         column_data->name = new BinTableString(*(column_header.name));
         column_data->size = header.n_rows;
         column_data->maxlen = maxlen;
-
-        ReadWriteSpecification spec;
-        spec.type = type;
-        spec.maxlen = maxlen;
-        spec.input_stream = &stream;
-
-
-
-        auto size = DATATYPE_ELEMENT_SIZE[column_header.type];
-        uint64_t array_size;
-
-
-        if (is_basic_bintable_datatype(column_header.type))
-        {
-            array_size = n_rows * size;
-        }
-        else if (column_header.type == BINTABLE_UTF32 || column_header.type == BINTABLE_UTF8)
-        {
-            array_size = n_rows * maxlen;
-        }
-        else if (column_header.type == BINTABLE_OBJECT)
-        {
-            array_size = n_rows*sizeof(PyObject *);
-        }
-
-        char *data_array= new char[array_size];
-
-        column_data->data = data_array;
+        column_data->data = new char[_array_size(column_data->type, column_data->size, column_data->maxlen)];
         out.push_back(column_data);
-
-        spec.output_stream = new MemoryOutputStream(data_array, array_size);
-        cols_specifications.push_back(spec);
     }
+
+    std::vector<ReadWriteSpecification> specs;
+    for (auto col_data : out) {
+        specs.push_back(_column_data_to_specs(*col_data, stream));
+    }
+
 
     uint64_t start_block_index = 0;
     while (start_block_index < n_rows)
@@ -284,20 +283,15 @@ void _read_rows(BinTableHeader &header, InputStream &stream, std::vector<BinTabl
 
         ToPythonOperationsSelector selector;
         Writer writer(&selector);
-
-
-        for (auto spec : cols_specifications)
-        {
-            writer.loop(n_block_rows).write(spec);
-        }
-
+        _write_column_major(writer, specs, n_block_rows);
         writer.run();
 
-        start_block_index+=n_block_rows;        
+        start_block_index += n_block_rows;
     }
 
-    for (auto spec : cols_specifications) {
-        delete spec.output_stream; 
+    for (auto spec : specs)
+    {
+        delete spec.output_stream;
     }
 }
 

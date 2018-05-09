@@ -46,8 +46,7 @@ void FromFixedLengthStringWriteOperation::operator()() {
         }
     }
     BinTableString temp_string;
-    temp_string.data = data_start;
-    temp_string.size = len;
+    temp_string.set(data_start, len, false);
     temp_string.write(*output_stream);
 }
 
@@ -59,7 +58,7 @@ FromFixedLengthStringWriteOperation::~FromFixedLengthStringWriteOperation() {
 ToFixedLengthStringWriteOperation::ToFixedLengthStringWriteOperation(uint8_t size, uint32_t maxlen) : zero_stream(ConstantInputStream(0)) {
     this->size = size;
     this->maxlen = maxlen;
-    operation_type = "FROM_FIXED_LENGTH_STRING_WRITE";
+    operation_type = "TO_FIXED_LENGTH_STRING_WRITE";
 }
 
 void ToFixedLengthStringWriteOperation::operator()() {
@@ -87,6 +86,6 @@ ToPyObjectWriteOperation::ToPyObjectWriteOperation() {
 }
 
 void ToPyObjectWriteOperation::operator()() {
-    BinTableString table_string(*input_stream);
-    output_stream->write_primitive(table_string_to_python_object(table_string));
+    temp_string.read(*input_stream);
+    output_stream->write_primitive(table_string_to_python_object(temp_string));
 }

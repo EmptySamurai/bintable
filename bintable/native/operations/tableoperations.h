@@ -2,6 +2,7 @@
 #include "common.h"
 #include "operations/operations.h"
 #include "streams/constantstream.h"
+#include "tablestring.h"
 
 NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 
@@ -52,6 +53,9 @@ class ToPyObjectWriteOperation : public ReadWriteOperation {
     public:
         ToPyObjectWriteOperation();
         void operator()() override;
+    
+    private:
+        BinTableString temp_string;
 };
 
 //To object skip is BinTableString skip
