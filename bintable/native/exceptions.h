@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(NAMESPACE_BINTABLE)
 class BinTableException : public std::exception {
 public:
     explicit BinTableException(const char * m) : message{m} {}
-    explicit BinTableException(const std::string m) : message{m} {}
+    explicit BinTableException(const std::string& m) : message{m} {}
     virtual const char * what() const noexcept override {return message.c_str();}
 private:
     std::string message = "";
